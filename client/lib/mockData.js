@@ -39,7 +39,7 @@ export const mockCustomers = [
   },
   {
     id: 'cust2',
-    name: 'XYZ Enterprises',
+    name: 'riheka Enterprises',
     gstin: '18AABCT5678H1Z0',
     email: 'info@xyz.com',
     phone: '+91 9876543210',
