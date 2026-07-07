@@ -183,8 +183,8 @@ export const mockInvoices = [
     customerName: 'ABC Trading Co.',
     customerId: 'cust1',
     invoiceNumber: 'INV001',
-    invoiceDate: '2024-11-25',
-    dueDate: '2024-12-10',
+    invoiceDate: '2026-11-25',
+    dueDate: '2026-12-10',
     items: [
       { id: 1, name: 'Premium Office Chair', quantity: 2, price: 12000, gst: 18 },
       { id: 2, name: 'Mechanical Keyboard', quantity: 1, price: 8000, gst: 18 },
@@ -196,7 +196,7 @@ export const mockInvoices = [
     status: 'paid',
     notes: 'Thank you for your business!',
     terms: 'Net 15 days',
-    createdAt: '2024-11-25',
+    createdAt: '2026-11-25',
   },
   {
     id: 'INV002',
@@ -216,15 +216,15 @@ export const mockInvoices = [
     status: 'pending',
     notes: 'Please confirm receipt',
     terms: 'Net 30 days',
-    createdAt: '2024-11-20',
+    createdAt: '2026-11-20',
   },
   {
     id: 'INV003',
     customerName: 'Global Tech Solutions',
     customerId: 'cust3',
     invoiceNumber: 'INV003',
-    invoiceDate: '2024-11-15',
-    dueDate: '2024-11-30',
+    invoiceDate: '2026-11-15',
+    dueDate: '2026-11-30',
     items: [
       { id: 1, name: 'Premium Office Chair', quantity: 10, price: 12000, gst: 18 },
       { id: 2, name: 'Monitor Stand', quantity: 8, price: 4500, gst: 18 },
@@ -236,15 +236,15 @@ export const mockInvoices = [
     status: 'overdue',
     notes: 'Bulk order',
     terms: 'Net 15 days',
-    createdAt: '2024-11-15',
+    createdAt: '2026-11-15',
   },
   {
     id: 'INV004',
     customerName: 'Innovation Labs',
     customerId: 'cust4',
     invoiceNumber: 'INV004',
-    invoiceDate: '2024-11-10',
-    dueDate: '2024-11-25',
+    invoiceDate: '2026-11-10',
+    dueDate: '2026  -11-25',
     items: [
       { id: 1, name: 'Wireless Mouse', quantity: 15, price: 1800, gst: 12 },
     ],
@@ -255,7 +255,7 @@ export const mockInvoices = [
     status: 'partial',
     notes: 'Partial payment received',
     terms: 'Net 20 days',
-    createdAt: '2024-11-10',
+    createdAt: '2026-11-10',
   },
 ];
 
@@ -278,7 +278,7 @@ export const mockPayments = [
     amount: 26840,
     status: 'pending',
     method: 'Cheque',
-    date: '2024-12-05',
+    date: '2026-12-05',
     reference: 'CHQ789012',
   },
   {

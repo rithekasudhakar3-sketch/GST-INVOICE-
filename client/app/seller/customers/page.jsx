@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { CustomerDetailsDrawer } from '@/components/CustomerDetailsDrawer';
 import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { Sidebar } from '@/components/Sidebar';
 import { SearchBar } from '@/components/SearchBar';
 import { Pagination } from '@/components/Pagination';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, downloadCsv } from '@/lib/utils';
 import { mockCustomers } from '@/lib/mockData';
 import { Plus, Edit2, Trash2, Phone, Mail, MapPin } from 'lucide-react';
 
@@ -15,6 +16,8 @@ export default function CustomersPage() {
   const [searchValue, setSearchValue] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState('name');
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [activeFilter, setActiveFilter] = useState('all');
   const itemsPerPage = 8;
 
   const filteredAndSorted = useMemo(() => {
@@ -24,6 +27,10 @@ export default function CustomersPage() {
       customer.gstin.toLowerCase().includes(searchValue.toLowerCase())
     );
 
+    if (activeFilter !== 'all') {
+      filtered = filtered.filter((customer) => customer.city.toLowerCase() === activeFilter.toLowerCase());
+    }
+
     if (sortBy === 'name') {
       filtered.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortBy === 'purchases') {
@@ -31,9 +38,16 @@ export default function CustomersPage() {
     }
 
     return filtered;
-  }, [searchValue, sortBy]);
+  }, [searchValue, sortBy, activeFilter]);
 
   const totalPages = Math.ceil(filteredAndSorted.length / itemsPerPage);
+  const filterOptions = ['all', ...new Set(mockCustomers.map((customer) => customer.city))];
+
+  const handleExport = () => {
+    const headers = ['Name', 'Email', 'Phone', 'GSTIN', 'City', 'Total Purchases'];
+    const rows = filteredAndSorted.map((customer) => [customer.name, customer.email, customer.phone, customer.gstin, customer.city, String(customer.totalPurchases)]);
+    downloadCsv('customers.csv', headers, rows);
+  };
   const paginatedData = filteredAndSorted.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
@@ -63,17 +77,25 @@ export default function CustomersPage() {
                   Manage your customer base
                 </p>
               </div>
-              <Link
-                href="/seller/customers/add"
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium"
-              >
-                <Plus className="w-5 h-5" />
-                Add Customer
-              </Link>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleExport}
+                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+                >
+                  Export CSV
+                </button>
+                <Link
+                  href="/seller/customers/add"
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium"
+                >
+                  <Plus className="w-5 h-5" />
+                  Add Customer
+                </Link>
+              </div>
             </div>
 
             {/* Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <SearchBar
                 placeholder="Search customers..."
                 value={searchValue}
@@ -82,6 +104,18 @@ export default function CustomersPage() {
                   setCurrentPage(1);
                 }}
               />
+              <select
+                value={activeFilter}
+                onChange={(e) => {
+                  setActiveFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className={`${isDark ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200'} border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              >
+                {filterOptions.map((option) => (
+                  <option key={option} value={option}>{option === 'all' ? 'All Cities' : option}</option>
+                ))}
+              </select>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
@@ -149,7 +183,10 @@ export default function CustomersPage() {
                     </div>
                   </div>
 
-                  <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors">
+                  <button
+                    onClick={() => setSelectedCustomer(customer)}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors"
+                  >
                     View Details
                   </button>
                 </div>
@@ -169,6 +206,12 @@ export default function CustomersPage() {
                 onPageChange={setCurrentPage}
               />
             )}
+
+            <CustomerDetailsDrawer
+              customer={selectedCustomer}
+              isOpen={Boolean(selectedCustomer)}
+              onClose={() => setSelectedCustomer(null)}
+            />
           </div>
         </main>
       </div>

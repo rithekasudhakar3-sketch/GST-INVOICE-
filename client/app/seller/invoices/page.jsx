@@ -6,19 +6,22 @@ import { Navbar } from '@/components/Navbar';
 import { Sidebar } from '@/components/Sidebar';
 import { SearchBar } from '@/components/SearchBar';
 import { Pagination } from '@/components/Pagination';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, downloadCsv } from '@/lib/utils';
 import { mockInvoices } from '@/lib/mockData';
-import { Plus, Eye, Download, Send, Trash2 } from 'lucide-react';
+import { Plus, Eye, Download, Send, Trash2, Copy } from 'lucide-react';
 
 export default function InvoicesPage() {
   const [isDark, setIsDark] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [sortBy, setSortBy] = useState('date');
   const [currentPage, setCurrentPage] = useState(1);
+  const [invoiceData, setInvoiceData] = useState(mockInvoices);
+  const [feedback, setFeedback] = useState('');
   const itemsPerPage = 10;
 
   const filtered = useMemo(() => {
-    let result = mockInvoices.filter(invoice =>
+    let result = invoiceData.filter(invoice =>
       invoice.invoiceNumber.toLowerCase().includes(searchValue.toLowerCase()) ||
       invoice.customerName.toLowerCase().includes(searchValue.toLowerCase())
     );
@@ -27,10 +30,39 @@ export default function InvoicesPage() {
       result = result.filter(i => i.status === filterStatus);
     }
 
+    result = [...result].sort((a, b) => {
+      if (sortBy === 'amount') return b.total - a.total;
+      return new Date(b.invoiceDate).getTime() - new Date(a.invoiceDate).getTime();
+    });
+
     return result;
-  }, [searchValue, filterStatus]);
+  }, [searchValue, filterStatus, sortBy, invoiceData]);
 
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
+
+  const handleDuplicate = (id) => {
+    const invoice = invoiceData.find((item) => item.id === id);
+    if (!invoice) return;
+    const duplicated = { ...invoice, id: `${invoice.id}-copy-${Date.now()}`, invoiceNumber: `${invoice.invoiceNumber}-COPY`, createdAt: new Date().toISOString().split('T')[0] };
+    setInvoiceData([duplicated, ...invoiceData]);
+    setFeedback('Invoice duplicated successfully.');
+  };
+
+  const handleDelete = (id) => {
+    setInvoiceData(invoiceData.filter((invoice) => invoice.id !== id));
+    setFeedback('Invoice removed from history.');
+  };
+
+  const handlePrint = (id) => {
+    setFeedback(`Preparing print for invoice ${id}.`);
+    window.print();
+  };
+
+  const handleExport = () => {
+    const headers = ['Invoice', 'Customer', 'Date', 'Amount', 'Status'];
+    const rows = filtered.map((invoice) => [invoice.invoiceNumber, invoice.customerName, invoice.invoiceDate, String(invoice.total), invoice.status]);
+    downloadCsv('sales.csv', headers, rows);
+  };
   const paginatedData = filtered.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
@@ -60,17 +92,31 @@ export default function InvoicesPage() {
                   Manage and track your invoices
                 </p>
               </div>
-              <Link
-                href="/seller/invoices/create"
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium"
-              >
-                <Plus className="w-5 h-5" />
-                Create Invoice
-              </Link>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleExport}
+                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+                >
+                  Export CSV
+                </button>
+                <Link
+                  href="/seller/invoices/create"
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium"
+                >
+                  <Plus className="w-5 h-5" />
+                  Create Invoice
+                </Link>
+              </div>
             </div>
 
+            {feedback && (
+              <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 dark:border-green-800 dark:bg-green-950/30 dark:text-green-400">
+                {feedback}
+              </div>
+            )}
+
             {/* Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <SearchBar
                 placeholder="Search invoices..."
                 value={searchValue}
@@ -89,6 +135,14 @@ export default function InvoicesPage() {
                 <option value="pending">Pending</option>
                 <option value="overdue">Overdue</option>
                 <option value="partial">Partial</option>
+              </select>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className={`${isDark ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200'} border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              >
+                <option value="date">Sort by Date</option>
+                <option value="amount">Sort by Amount</option>
               </select>
             </div>
 
@@ -157,13 +211,16 @@ export default function InvoicesPage() {
                             <button className="p-1.5 hover:bg-gray-200 rounded-lg" title="View">
                               <Eye className="w-4 h-4" />
                             </button>
-                            <button className="p-1.5 hover:bg-gray-200 rounded-lg" title="Download">
+                            <button className="p-1.5 hover:bg-gray-200 rounded-lg" title="Duplicate" onClick={() => handleDuplicate(invoice.id)}>
+                              <Copy className="w-4 h-4" />
+                            </button>
+                            <button className="p-1.5 hover:bg-gray-200 rounded-lg" title="Print" onClick={() => handlePrint(invoice.id)}>
                               <Download className="w-4 h-4" />
                             </button>
                             <button className="p-1.5 hover:bg-gray-200 rounded-lg" title="Send">
                               <Send className="w-4 h-4" />
                             </button>
-                            <button className="p-1.5 hover:bg-gray-200 rounded-lg text-red-600" title="Delete">
+                            <button className="p-1.5 hover:bg-gray-200 rounded-lg text-red-600" title="Delete" onClick={() => handleDelete(invoice.id)}>
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
