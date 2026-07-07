@@ -127,26 +127,33 @@ Try these on any page:
 
 ## 🛠️ Technology Stack
 
-- **Frontend**: React 19 + Next.js 16
+- **Frontend (client/)**: React 19 + Next.js 16 (Turbopack)
+- **Backend (server/)**: Express.js + Node.js (ES Modules)
 - **Styling**: Tailwind CSS v4
 - **Charts**: Recharts
 - **Icons**: React Icons + Lucide React
-- **Data**: Mock JSON (frontend only)
-- **Type Safety**: TypeScript
+- **Database**: Mock in-memory database service (ready for MongoDB / PostgreSQL)
 
 ## 📁 Project Structure
 
 ```
-src/
-├── app/
-│   ├── page.jsx           # Home page
-│   ├── seller/            # Seller pages
-│   └── client/            # Client pages
-├── components/            # Reusable components
-├── lib/
-│   ├── mockData.js       # Sample data
-│   └── utils.ts          # Utilities
-└── globals.css           # Styling
+invoice-management-system/
+├── client/                     # Next.js Frontend
+│   ├── app/                    # Next.js App Router (client, seller pages)
+│   ├── components/             # Reusable UI components
+│   ├── lib/                    # Client libraries and mock data
+│   ├── public/                 # Static assets (images, icons)
+│   └── package.json            # Frontend config
+├── server/                     # Express.js Backend API
+│   ├── src/
+│   │   ├── controllers/        # Request handlers
+│   │   ├── routes/             # Route configurations
+│   │   ├── services/           # DB Service (in-memory mock database)
+│   │   ├── app.js              # Express app initialization
+│   │   └── server.js           # Server port listener entry point
+│   └── package.json            # Backend config
+├── pnpm-workspace.yaml         # Workspace monorepo declaration
+└── package.json                # Monorepo runner scripts
 ```
 
 ## 🎓 Learning Path

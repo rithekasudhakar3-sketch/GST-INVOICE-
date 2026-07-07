@@ -1,15 +1,32 @@
-# v0 sandbox internal files
+# Monorepo dependencies
+node_modules/
+
+# Next.js build output
+client/.next/
+client/out/
+
+# Server build output
+server/dist/
+server/build/
+
+# Environment files
+.env
+.env.local
+.env.*
+!.env.example
+
+# Logs and system files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.DS_Store
+Thumbs.db
+
+# V0 Sandbox
 __v0_runtime_loader.js
 __v0_devtools.tsx
 __v0_jsx-dev-runtime.ts
 .snowflake/
 .v0-trash/
 .vercel/
-
-# Environment variables
-.env*.local
-
-# Common ignores
-node_modules
-.next/
-.DS_Store
