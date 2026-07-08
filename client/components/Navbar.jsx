@@ -4,13 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Bell, Settings, LogOut, Moon, Sun } from 'lucide-react';
 import { Avatar } from './Avatar';
-import { SearchBar } from './SearchBar';
 import { mockUsers, mockNotifications } from '@/lib/mockData';
 
 export function Navbar({ user, role, onThemeToggle, isDark }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
 
   const unreadNotifications = mockNotifications.filter(n => !n.read);
 
@@ -29,15 +27,6 @@ export function Navbar({ user, role, onThemeToggle, isDark }) {
               InvoiceHub
             </span>
           </Link>
-
-          {/* Center Search - Hidden on Mobile */}
-          <div className="hidden md:flex flex-1 mx-8 max-w-xs">
-            <SearchBar 
-              placeholder="Search..." 
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-            />
-          </div>
 
           {/* Right Actions */}
           <div className="flex items-center gap-4">

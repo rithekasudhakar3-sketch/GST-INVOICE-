@@ -1,0 +1,28 @@
+[
+  {
+    "id": "cust_1783533720354",
+    "name": "ABC Enterprises",
+    "gstin": "33AAACI1607G2Z5",
+    "email": "abc@gmail.com",
+    "phone": "58964 02375",
+    "address": "14A, Raman Street ,Bengaluru,Karnataka",
+    "city": "Banglore",
+    "state": "Karnataka",
+    "totalPurchases": 0,
+    "invoiceCount": 0,
+    "createdAt": "2026-07-08"
+  },
+  {
+    "id": "cust_1783538646471",
+    "name": "XYZ Enterprises",
+    "gstin": "33AAACI1607G2Z5",
+    "email": "xyz@gmail.com",
+    "phone": "58964 02375",
+    "address": "14A, Raman Street ,Bengaluru,Karnataka",
+    "city": "Banglore",
+    "state": "Karnataka",
+    "totalPurchases": 0,
+    "invoiceCount": 0,
+    "createdAt": "2026-07-08"
+  }
+]
