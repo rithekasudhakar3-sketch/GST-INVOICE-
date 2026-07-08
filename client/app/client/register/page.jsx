@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Loader2, Lock, Mail, User, ShieldCheck, Sparkles } from 'lucide-react';
-import { setStoredAuth } from '@/lib/auth';
+import { registerClient } from '@/lib/auth';
 import { Toast } from '@/components/Toast';
 
 export default function ClientRegisterPage() {
@@ -38,10 +38,17 @@ export default function ClientRegisterPage() {
     setLoading(true);
     setToast(null);
     setTimeout(() => {
-      setStoredAuth('client', { email, name });
+      const result = registerClient(name, email, password);
       setLoading(false);
-      setToast({ type: 'success', message: 'Account created successfully.' });
-      router.replace('/client/dashboard');
+      
+      if (result.success) {
+        setToast({ type: 'success', message: 'Account created successfully. Redirecting to login...' });
+        setTimeout(() => {
+          router.replace('/client/login');
+        }, 1400);
+      } else {
+        setToast({ type: 'error', message: result.error });
+      }
     }, 800);
   };
 

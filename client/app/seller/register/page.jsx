@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Loader2, Lock, Mail, User, ShieldCheck, Sparkles } from 'lucide-react';
-import { setStoredAuth } from '@/lib/auth';
+import { registerSeller } from '@/lib/auth';
 import { Toast } from '@/components/Toast';
 
 export default function SellerRegisterPage() {
@@ -38,10 +38,17 @@ export default function SellerRegisterPage() {
     setLoading(true);
     setToast(null);
     setTimeout(() => {
-      setStoredAuth('seller', { email, name });
+      const result = registerSeller(name, email, password);
       setLoading(false);
-      setToast({ type: 'success', message: 'Account created successfully.' });
-      router.replace('/seller/dashboard');
+      
+      if (result.success) {
+        setToast({ type: 'success', message: 'Account created successfully. Redirecting to login...' });
+        setTimeout(() => {
+          router.replace('/seller/login');
+        }, 1400);
+      } else {
+        setToast({ type: 'error', message: result.error });
+      }
     }, 800);
   };
 

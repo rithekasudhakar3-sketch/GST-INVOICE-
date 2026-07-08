@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Loader2, Lock, Mail, ShieldCheck, Sparkles } from 'lucide-react';
-import { setStoredAuth } from '@/lib/auth';
+import { loginClient } from '@/lib/auth';
 import { Toast } from '@/components/Toast';
 
 export default function ClientLoginPage() {
@@ -37,10 +37,17 @@ export default function ClientLoginPage() {
     setLoading(true);
     setToast(null);
     setTimeout(() => {
-      setStoredAuth('client', { email, name: 'Client User' });
+      const result = loginClient(email, password);
       setLoading(false);
-      setToast({ type: 'success', message: 'Signed in successfully.' });
-      router.replace('/client/dashboard');
+      
+      if (result.success) {
+        setToast({ type: 'success', message: 'Signed in successfully.' });
+        setTimeout(() => {
+          router.replace('/client/dashboard');
+        }, 800);
+      } else {
+        setToast({ type: 'error', message: result.error });
+      }
     }, 800);
   };
 
