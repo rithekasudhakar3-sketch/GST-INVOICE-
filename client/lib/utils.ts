@@ -82,3 +82,14 @@ export const getDaysOverdue = (dueDate: string) => {
 export const truncateText = (text: string, length: number = 50) => {
   return text.length > length ? text.substring(0, length) + '...' : text
 }
+
+export const downloadCsv = (filename: string, headers: string[], rows: string[][]) => {
+  const csvContent = [headers.join(','), ...rows.map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(','))].join('\n')
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(url)
+}

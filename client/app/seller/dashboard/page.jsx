@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { StatCard } from '@/components/StatCard';
 import { Navbar } from '@/components/Navbar';
 import { Sidebar } from '@/components/Sidebar';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { mockInvoices, getDashboardStats, revenueChartData } from '@/lib/mockData';
+import { mockInvoices, getDashboardStats, mockProducts } from '@/lib/mockData';
 import {
   BarChart,
   Bar,
@@ -36,6 +37,13 @@ export default function SellerDashboard() {
   const [isDark, setIsDark] = useState(false);
   const stats = getDashboardStats('seller');
 
+  const inventoryAlerts = useMemo(() => mockProducts.filter((product) => product.stock < 10), []);
+  const gstSummary = useMemo(() => ({
+    collected: 52800,
+    payable: 19420,
+    pending: 8200,
+  }), []);
+
   const invoiceStatusData = [
     { name: 'Paid', value: stats.paidInvoices, percentage: 79 },
     { name: 'Pending', value: stats.pendingPayments, percentage: 21 },
@@ -50,6 +58,7 @@ export default function SellerDashboard() {
   ];
 
   return (
+    <ProtectedRoute role="seller">
     <div className={`${isDark ? 'bg-gray-950 text-white' : 'bg-gray-50'} min-h-screen`}>
       <Navbar 
         user="seller" 
@@ -102,6 +111,28 @@ export default function SellerDashboard() {
                 change={stats.paidChange}
                 color="green"
               />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8">
+              <div className={`${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} border rounded-xl p-5`}>
+                <p className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>GST Collected</p>
+                <p className={`mt-2 text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{formatCurrency(gstSummary.collected)}</p>
+              </div>
+              <div className={`${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} border rounded-xl p-5`}>
+                <p className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>GST Payable</p>
+                <p className={`mt-2 text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{formatCurrency(gstSummary.payable)}</p>
+              </div>
+              <div className={`${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} border rounded-xl p-5`}>
+                <p className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Low Stock Items</p>
+                <p className={`mt-2 text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{inventoryAlerts.length}</p>
+              </div>
+              <div className={`${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} border rounded-xl p-5`}>
+                <p className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Quick Actions</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link href="/seller/invoices/create" className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white">Create Invoice</Link>
+                  <Link href="/seller/products" className="rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-200">Check Stock</Link>
+                </div>
+              </div>
             </div>
 
             {/* Charts */}
@@ -159,6 +190,37 @@ export default function SellerDashboard() {
                     />
                   </PieChart>
                 </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <div className={`${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} border rounded-xl p-6`}>
+                <h3 className={`text-lg font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Inventory Alerts</h3>
+                <div className="space-y-3">
+                  {inventoryAlerts.map((product) => (
+                    <div key={product.id} className={`flex items-center justify-between rounded-xl border px-3 py-3 ${isDark ? 'border-gray-800 bg-gray-800/60' : 'border-gray-200 bg-gray-50'}`}>
+                      <div>
+                        <p className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{product.name}</p>
+                        <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Only {product.stock} left in stock</p>
+                      </div>
+                      <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">Low stock</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className={`${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} border rounded-xl p-6`}>
+                <h3 className={`text-lg font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Sales Analytics</h3>
+                <div className="space-y-4">
+                  <div className={`rounded-xl border p-4 ${isDark ? 'border-gray-800 bg-gray-800/60' : 'border-gray-200 bg-gray-50'}`}>
+                    <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Average order value</p>
+                    <p className={`mt-1 text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{formatCurrency(12840)}</p>
+                  </div>
+                  <div className={`rounded-xl border p-4 ${isDark ? 'border-gray-800 bg-gray-800/60' : 'border-gray-200 bg-gray-50'}`}>
+                    <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Repeat customers</p>
+                    <p className={`mt-1 text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>68%</p>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -230,5 +292,6 @@ export default function SellerDashboard() {
         </main>
       </div>
     </div>
+    </ProtectedRoute>
   );
 }

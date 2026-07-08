@@ -5,6 +5,9 @@ import { Navbar } from '@/components/Navbar';
 import { Sidebar } from '@/components/Sidebar';
 import { SearchBar } from '@/components/SearchBar';
 import { StatusBadge } from '@/components/StatusBadge';
+import { formatCurrency, downloadCsv } from '@/lib/utils';
+import { mockProducts } from '@/lib/mockData';
+import { Plus, Edit2, Trash2, Barcode, PackageSearch, AlertTriangle } from 'lucide-react';
 import { Modal } from '@/components/Modal';
 import { Toast } from '@/components/Toast';
 import { formatCurrency } from '@/lib/utils';
@@ -136,6 +139,12 @@ export default function ProductsPage() {
     });
   };
 
+  const handleExport = () => {
+    const headers = ['Name', 'Category', 'Price', 'GST', 'Stock', 'Status'];
+    const rows = filtered.map((product) => [product.name, product.category, String(product.price), String(product.gst), String(product.stock), product.status]);
+    downloadCsv('products.csv', headers, rows);
+  };
+
   return (
     <div className={`${isDark ? 'bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'} min-h-screen transition-colors duration-300`}>
       <Navbar 
@@ -159,6 +168,21 @@ export default function ProductsPage() {
                 <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'} mt-2`}>
                   Manage your product catalog
                 </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleExport}
+                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+                >
+                  Export CSV
+                </button>
+                <Link
+                  href="/seller/products/add"
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium"
+                >
+                  <Plus className="w-5 h-5" />
+                  Add Product
+                </Link>
               </div>
               <button
                 onClick={() => setIsAddOpen(true)}
@@ -225,6 +249,14 @@ export default function ProductsPage() {
                     </div>
 
                     <div className="mb-3">
+                <div className="mb-3 flex flex-wrap gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                    <Barcode className="h-3.5 w-3.5" /> HSN {product.hsnCode || '9983'}
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                    <PackageSearch className="h-3.5 w-3.5" /> {product.barcode || 'BAR-001'}
+                  </span>
+                </div>
                       <div className="flex justify-between items-center mb-2">
                         <span className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                           {formatCurrency(product.price)}
@@ -242,6 +274,12 @@ export default function ProductsPage() {
                       </div>
                     </div>
 
+                    {product.stock < 10 && (
+                      <div className="mb-3 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-400">
+                        <AlertTriangle className="h-4 w-4" /> Low stock alert
+                      </div>
+                    )}
+                    <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors text-sm">
                     <button 
                       onClick={() => handleViewDetails(product)}
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors cursor-pointer text-sm"

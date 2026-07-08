@@ -54,7 +54,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl mx-auto mb-12">
             {/* Seller Portal */}
             <Link
-              href="/seller/dashboard"
+              href="/seller/login"
               className={`group p-8 rounded-xl border-2 transition-all hover:shadow-lg ${isDark ? 'bg-gray-900 border-gray-800 hover:border-blue-500' : 'bg-white border-gray-200 hover:border-blue-500'}`}
             >
               <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-blue-100 mb-4 mx-auto">
@@ -73,7 +73,7 @@ export default function HomePage() {
 
             {/* Client Portal */}
             <Link
-              href="/client/dashboard"
+              href="/client/login"
               className={`group p-8 rounded-xl border-2 transition-all hover:shadow-lg ${isDark ? 'bg-gray-900 border-gray-800 hover:border-purple-500' : 'bg-white border-gray-200 hover:border-purple-500'}`}
             >
               <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-purple-100 mb-4 mx-auto">
@@ -147,7 +147,7 @@ export default function HomePage() {
       <footer className={`${isDark ? 'bg-gray-950 border-gray-800' : 'bg-white border-gray-200'} border-t py-8`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p className={isDark ? 'text-gray-400' : 'text-gray-600'}>
-            © 2024 InvoiceHub. All rights reserved.
+            © 2026 InvoiceHub. All rights reserved.
           </p>
         </div>
       </footer>

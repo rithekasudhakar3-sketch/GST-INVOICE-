@@ -186,6 +186,25 @@ export default function ReportsPage() {
               </div>
             </div>
 
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className={`${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} border rounded-xl p-6`}>
+                <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'} text-sm font-medium`}>Daily</p>
+                <p className={`text-2xl font-bold mt-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>{formatCurrency(12400)}</p>
+              </div>
+              <div className={`${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} border rounded-xl p-6`}>
+                <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'} text-sm font-medium`}>Monthly</p>
+                <p className={`text-2xl font-bold mt-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>{formatCurrency(328000)}</p>
+              </div>
+              <div className={`${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} border rounded-xl p-6`}>
+                <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'} text-sm font-medium`}>Yearly</p>
+                <p className={`text-2xl font-bold mt-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>{formatCurrency(4320000)}</p>
+              </div>
+              <div className={`${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} border rounded-xl p-6`}>
+                <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'} text-sm font-medium`}>Profit</p>
+                <p className={`text-2xl font-bold mt-2 ${isDark ? 'text-green-400' : 'text-green-600'}`}>{formatCurrency(860000)}</p>
+              </div>
+            </div>
+
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
               <div className={`${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} border rounded-xl p-6`}>

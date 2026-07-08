@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { StatCard } from '@/components/StatCard';
 import { Navbar } from '@/components/Navbar';
 import { Sidebar } from '@/components/Sidebar';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { mockInvoices, getDashboardStats } from '@/lib/mockData';
 import {
@@ -41,6 +42,7 @@ export default function ClientDashboard() {
   ];
 
   return (
+    <ProtectedRoute role="client">
     <div className={`${isDark ? 'bg-gray-950 text-white' : 'bg-gray-50'} min-h-screen`}>
       <Navbar 
         user="client" 
@@ -212,5 +214,6 @@ export default function ClientDashboard() {
         </main>
       </div>
     </div>
+    </ProtectedRoute>
   );
 }

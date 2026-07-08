@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo, useState } from 'react';
 import { useState, useEffect } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { Sidebar } from '@/components/Sidebar';
@@ -11,6 +12,15 @@ import { Mail, Phone, Plus, MapPin, Building, FileText, User } from 'lucide-reac
 
 export default function VendorsPage() {
   const [isDark, setIsDark] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+
+  const filteredVendors = useMemo(() => {
+    return mockVendors.filter((vendor) =>
+      vendor.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+      vendor.email.toLowerCase().includes(searchValue.toLowerCase()) ||
+      vendor.contactPerson.toLowerCase().includes(searchValue.toLowerCase())
+    );
+  }, [searchValue]);
 
   // Sync dark mode class to root HTML
   useEffect(() => {
@@ -178,8 +188,21 @@ export default function VendorsPage() {
               </div>
             </div>
 
+            <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <input
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                placeholder="Search suppliers..."
+                className={`${isDark ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200'} w-full max-w-md rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              />
+              <button className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                Add Supplier
+              </button>
+            </div>
+
             {/* Vendors Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredVendors.map((vendor) => (
               {vendors.map((vendor) => (
                 <div
                   key={vendor.id}
