@@ -25,7 +25,7 @@
     "category": "Accessories",
     "stock": 89,
     "status": "active",
-    "image": "https://images.unsplash.com/photo-1595225476933-018acacc7d7d?w=400&h=300&fit=crop",
+    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRSdkLSMNI2rzeMAs1FsOSBUlphmV-dEl4T-G-gy2iok4oYCsCWLiRj2nY&s=10",
     "typeOfSupply": "Goods",
     "uom": "NOS-NUMBERS"
   },
@@ -40,7 +40,7 @@
     "category": "Lighting",
     "stock": 0,
     "status": "inactive",
-    "image": "https://images.unsplash.com/photo-1565182999555-2142eadeb5b4?w=400&h=300&fit=crop",
+    "image": "https://m.media-amazon.com/images/I/61b12Blb-JL._AC_UF350,350_QL80_.jpg",
     "typeOfSupply": "Goods",
     "uom": "PCS-PIECES"
   },
@@ -55,7 +55,7 @@
     "category": "Peripherals",
     "stock": 67,
     "status": "active",
-    "image": "https://images.unsplash.com/photo-1587829191301-95d6a3fb3d3f?w=400&h=300&fit=crop",
+    "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRQE5JCsgRw7UXQOgKXZstAGbi1xsn_49VIL7VBUIqmyIgRIyiQqupb07WY&s=10",
     "typeOfSupply": "Goods",
     "uom": "NOS-NUMBERS"
   },

@@ -17,6 +17,8 @@ import {
   X,
 } from 'lucide-react';
 
+import { getCurrentUser } from '@/lib/auth';
+
 const sellerMenuItems = [
   { name: 'Dashboard', href: '/seller/dashboard', icon: LayoutDashboard },
   { name: 'Customers', href: '/seller/customers', icon: Users },
@@ -42,7 +44,23 @@ export function Sidebar({ role, isDark }) {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
   
-  const menuItems = role === 'seller' ? sellerMenuItems : clientMenuItems;
+  // Resolve actual user role if generic client role is passed
+  let resolvedRole = role;
+  if (role !== 'seller') {
+    const user = getCurrentUser();
+    if (user && user.role) {
+      resolvedRole = user.role.toLowerCase();
+    }
+  }
+  
+  const menuItems = role === 'seller' 
+    ? sellerMenuItems 
+    : clientMenuItems.map(item => {
+        if (item.name === 'Dashboard' && ['manager', 'hr', 'accountant'].includes(resolvedRole)) {
+          return { ...item, href: `/client/dashboard/${resolvedRole}` };
+        }
+        return item;
+      });
   const baseHref = role === 'seller' ? '/seller' : '/client';
 
   const isActiveLink = (href) => pathname === href;

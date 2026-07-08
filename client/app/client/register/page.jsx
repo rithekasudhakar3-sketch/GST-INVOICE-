@@ -3,16 +3,21 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Loader2, Lock, Mail, User, ShieldCheck, Sparkles } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Lock, Mail, User, ShieldCheck, Sparkles, Briefcase, Hash } from 'lucide-react';
 import { registerClient } from '@/lib/auth';
 import { Toast } from '@/components/Toast';
 
 export default function ClientRegisterPage() {
   const [isDark, setIsDark] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [employeeId, setEmployeeId] = useState('');
+  const [department, setDepartment] = useState('');
+  const [role, setRole] = useState('Manager');
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
   const [errors, setErrors] = useState({});
@@ -24,10 +29,13 @@ export default function ClientRegisterPage() {
 
   const validateForm = () => {
     const nextErrors = {};
-    if (!name.trim()) nextErrors.name = 'Name is required.';
-    if (!email.trim()) nextErrors.email = 'Email is required.';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) nextErrors.email = 'Enter a valid email.';
+    if (!name.trim()) nextErrors.name = 'Full name is required.';
+    if (!email.trim()) nextErrors.email = 'Email address is required.';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) nextErrors.email = 'Enter a valid email address.';
+    if (!employeeId.trim()) nextErrors.employeeId = 'Employee ID is required.';
+    if (!department.trim()) nextErrors.department = 'Department is required.';
     if (!password || password.length < 6) nextErrors.password = 'Password should be at least 6 characters.';
+    if (password !== confirmPassword) nextErrors.confirmPassword = 'Passwords do not match.';
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -38,11 +46,11 @@ export default function ClientRegisterPage() {
     setLoading(true);
     setToast(null);
     setTimeout(() => {
-      const result = registerClient(name, email, password);
+      const result = registerClient(name, email, password, employeeId, department, role);
       setLoading(false);
       
       if (result.success) {
-        setToast({ type: 'success', message: 'Account created successfully. Redirecting to login...' });
+        setToast({ type: 'success', message: 'Registration Successful. Redirecting to login...' });
         setTimeout(() => {
           router.replace('/client/login');
         }, 1400);
@@ -61,22 +69,22 @@ export default function ClientRegisterPage() {
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.25),_transparent_35%)]" />
               <div className="relative">
                 <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-3 py-1 text-sm font-medium text-white/90">
-                  <Sparkles className="h-4 w-4" /> Create Client Account
+                  <Sparkles className="h-4 w-4" /> Internal Portal Registration
                 </div>
-                <h1 className="max-w-md text-4xl font-semibold leading-tight text-white">Start managing your bills from a single place.</h1>
-                <p className="mt-4 max-w-md text-sm leading-7 text-white/80">Create a client account to track invoices, payments, and important vendor updates.</p>
+                <h1 className="max-w-md text-4xl font-semibold leading-tight text-white">Access the company workflow engine.</h1>
+                <p className="mt-4 max-w-md text-sm leading-7 text-white/80">Register as internal staff to create and approve invoices, compliance requests, and vendor bills.</p>
               </div>
               <div className="relative rounded-2xl border border-white/20 bg-white/10 p-4 text-sm text-white/90 shadow-lg backdrop-blur">
-                <div className="flex items-center gap-2 font-semibold"><ShieldCheck className="h-4 w-4" /> Fast client onboarding</div>
-                <p className="mt-2">A secure and polished sign-up flow with route protection and clear feedback at every step.</p>
+                <div className="flex items-center gap-2 font-semibold"><ShieldCheck className="h-4 w-4" /> Role-Based Access Control</div>
+                <p className="mt-2">Secure access points tailored for Managers, HR Staff, and Accounting Professionals.</p>
               </div>
             </div>
 
             <div className="p-6 sm:p-8 lg:p-10">
               <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.25em] text-fuchsia-600">Client Sign Up</p>
-                  <h2 className="mt-2 text-3xl font-semibold">Create account</h2>
+                  <p className="text-sm font-semibold uppercase tracking-[0.25em] text-fuchsia-600">Staff Sign Up</p>
+                  <h2 className="mt-2 text-3xl font-semibold">Register Account</h2>
                 </div>
                 <button onClick={() => setIsDark(!isDark)} className={`rounded-full px-3 py-2 text-sm ${isDark ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-700'}`}>
                   {isDark ? '☀️' : '🌙'}
@@ -84,39 +92,87 @@ export default function ClientRegisterPage() {
               </div>
 
               <form className="space-y-4" onSubmit={handleSubmit}>
-                <div className="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
-                  <label className="mb-2 block text-sm font-medium">Full name</label>
-                  <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 dark:border-slate-700 dark:bg-slate-900">
-                    <User className="h-4 w-4 text-slate-400" />
-                    <input value={name} onChange={(e) => setName(e.target.value)} className="w-full border-none bg-transparent outline-none" placeholder="Aarav Sharma" type="text" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
+                    <label className="mb-1 block text-xs font-medium">Full Name</label>
+                    <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
+                      <User className="h-4 w-4 text-slate-400" />
+                      <input value={name} onChange={(e) => setName(e.target.value)} className="w-full border-none bg-transparent outline-none text-sm" placeholder="Aarav Sharma" type="text" />
+                    </div>
+                    {errors.name ? <p className="mt-1 text-xs text-rose-500">{errors.name}</p> : null}
                   </div>
-                  {errors.name ? <p className="mt-2 text-sm text-rose-500">{errors.name}</p> : null}
+
+                  <div className="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
+                    <label className="mb-1 block text-xs font-medium">Email Address</label>
+                    <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
+                      <Mail className="h-4 w-4 text-slate-400" />
+                      <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border-none bg-transparent outline-none text-sm" placeholder="you@company.com" type="email" />
+                    </div>
+                    {errors.email ? <p className="mt-1 text-xs text-rose-500">{errors.email}</p> : null}
+                  </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
-                  <label className="mb-2 block text-sm font-medium">Email address</label>
-                  <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 dark:border-slate-700 dark:bg-slate-900">
-                    <Mail className="h-4 w-4 text-slate-400" />
-                    <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border-none bg-transparent outline-none" placeholder="you@company.com" type="email" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
+                    <label className="mb-1 block text-xs font-medium">Employee ID</label>
+                    <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
+                      <Hash className="h-4 w-4 text-slate-400" />
+                      <input value={employeeId} onChange={(e) => setEmployeeId(e.target.value)} className="w-full border-none bg-transparent outline-none text-sm" placeholder="EMP-10023" type="text" />
+                    </div>
+                    {errors.employeeId ? <p className="mt-1 text-xs text-rose-500">{errors.employeeId}</p> : null}
                   </div>
-                  {errors.email ? <p className="mt-2 text-sm text-rose-500">{errors.email}</p> : null}
+
+                  <div className="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
+                    <label className="mb-1 block text-xs font-medium">Department</label>
+                    <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
+                      <Briefcase className="h-4 w-4 text-slate-400" />
+                      <input value={department} onChange={(e) => setDepartment(e.target.value)} className="w-full border-none bg-transparent outline-none text-sm" placeholder="Finance" type="text" />
+                    </div>
+                    {errors.department ? <p className="mt-1 text-xs text-rose-500">{errors.department}</p> : null}
+                  </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
-                  <label className="mb-2 block text-sm font-medium">Password</label>
-                  <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 dark:border-slate-700 dark:bg-slate-900">
-                    <Lock className="h-4 w-4 text-slate-400" />
-                    <input value={password} onChange={(e) => setPassword(e.target.value)} className="w-full border-none bg-transparent outline-none" placeholder="••••••••" type={showPassword ? 'text' : 'password'} />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-slate-400 transition hover:text-slate-700">
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
+                <div className="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
+                  <label className="mb-1 block text-xs font-medium">Role</label>
+                  <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
+                    <ShieldCheck className="h-4 w-4 text-slate-400" />
+                    <select value={role} onChange={(e) => setRole(e.target.value)} className="w-full border-none bg-transparent outline-none text-sm text-slate-700 dark:text-slate-200">
+                      <option value="Manager">Manager</option>
+                      <option value="HR">HR</option>
+                      <option value="Accountant">Accountant</option>
+                    </select>
                   </div>
-                  {errors.password ? <p className="mt-2 text-sm text-rose-500">{errors.password}</p> : null}
                 </div>
 
-                <button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 to-purple-600 px-4 py-3 font-semibold text-white shadow-lg shadow-fuchsia-200 transition hover:scale-[1.01] disabled:opacity-70">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
+                    <label className="mb-1 block text-xs font-medium">Password</label>
+                    <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
+                      <Lock className="h-4 w-4 text-slate-400" />
+                      <input value={password} onChange={(e) => setPassword(e.target.value)} className="w-full border-none bg-transparent outline-none text-sm" placeholder="••••••••" type={showPassword ? 'text' : 'password'} />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-slate-400 transition hover:text-slate-700">
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    {errors.password ? <p className="mt-1 text-xs text-rose-500">{errors.password}</p> : null}
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
+                    <label className="mb-1 block text-xs font-medium">Confirm Password</label>
+                    <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
+                      <Lock className="h-4 w-4 text-slate-400" />
+                      <input value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full border-none bg-transparent outline-none text-sm" placeholder="••••••••" type={showConfirmPassword ? 'text' : 'password'} />
+                      <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="text-slate-400 transition hover:text-slate-700">
+                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    {errors.confirmPassword ? <p className="mt-1 text-xs text-rose-500">{errors.confirmPassword}</p> : null}
+                  </div>
+                </div>
+
+                <button type="submit" disabled={loading} className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 to-purple-600 px-4 py-3 font-semibold text-white shadow-lg shadow-fuchsia-200 transition hover:scale-[1.01] disabled:opacity-70 cursor-pointer">
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-                  {loading ? 'Creating account…' : 'Create account'}
+                  {loading ? 'Creating account…' : 'Register'}
                 </button>
               </form>
 

@@ -12,6 +12,7 @@ export default function ClientLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('Manager');
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
@@ -37,13 +38,13 @@ export default function ClientLoginPage() {
     setLoading(true);
     setToast(null);
     setTimeout(() => {
-      const result = loginClient(email, password);
+      const result = loginClient(email, password, role);
       setLoading(false);
       
       if (result.success) {
         setToast({ type: 'success', message: 'Signed in successfully.' });
         setTimeout(() => {
-          router.replace('/client/dashboard');
+          router.replace(`/client/dashboard/${role.toLowerCase()}`);
         }, 800);
       } else {
         setToast({ type: 'error', message: result.error });
@@ -60,21 +61,21 @@ export default function ClientLoginPage() {
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.25),_transparent_35%)]" />
               <div className="relative">
                 <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/15 px-3 py-1 text-sm font-medium text-white/90">
-                  <Sparkles className="h-4 w-4" /> Client Billing Portal
+                  <Sparkles className="h-4 w-4" /> Internal Staff Portal
                 </div>
-                <h1 className="max-w-md text-4xl font-semibold leading-tight text-white">Review invoices and manage your payments with confidence.</h1>
-                <p className="mt-4 max-w-md text-sm leading-7 text-white/80">Access a secure client workspace for bills, payments, and vendor interactions.</p>
+                <h1 className="max-w-md text-4xl font-semibold leading-tight text-white">Coordinate business approvals, compliance, and expenses.</h1>
+                <p className="mt-4 max-w-md text-sm leading-7 text-white/80">Log in to view pending approvals, verify company policies, calculate GST compliance, and track Input Tax Credit.</p>
               </div>
               <div className="relative rounded-2xl border border-white/20 bg-white/10 p-4 text-sm text-white/90 shadow-lg backdrop-blur">
-                <div className="flex items-center gap-2 font-semibold"><ShieldCheck className="h-4 w-4" /> Protected client access</div>
-                <p className="mt-2">Simple sign-in flow with route guarding and a polished experience built for every client.</p>
+                <div className="flex items-center gap-2 font-semibold"><ShieldCheck className="h-4 w-4" /> Protected staff access</div>
+                <p className="mt-2">Enter credentials and select your correct organizational role to access your personalized workspace.</p>
               </div>
             </div>
 
             <div className="p-6 sm:p-8 lg:p-10">
               <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.25em] text-fuchsia-600">Client Login</p>
+                  <p className="text-sm font-semibold uppercase tracking-[0.25em] text-fuchsia-600">Staff Login</p>
                   <h2 className="mt-2 text-3xl font-semibold">Welcome back</h2>
                 </div>
                 <button onClick={() => setIsDark(!isDark)} className={`rounded-full px-3 py-2 text-sm ${isDark ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-700'}`}>
@@ -90,6 +91,18 @@ export default function ClientLoginPage() {
                     <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border-none bg-transparent outline-none" placeholder="you@company.com" type="email" />
                   </div>
                   {errors.email ? <p className="mt-2 text-sm text-rose-500">{errors.email}</p> : null}
+                </div>
+
+                <div className="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
+                  <label className="mb-2 block text-sm font-medium">Role</label>
+                  <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 dark:border-slate-700 dark:bg-slate-900">
+                    <ShieldCheck className="h-4 w-4 text-slate-400" />
+                    <select value={role} onChange={(e) => setRole(e.target.value)} className="w-full border-none bg-transparent outline-none text-slate-700 dark:text-slate-200">
+                      <option value="Manager">Manager</option>
+                      <option value="HR">HR</option>
+                      <option value="Accountant">Accountant</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div className="rounded-2xl border border-slate-200/70 bg-slate-50/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40">
@@ -109,16 +122,12 @@ export default function ClientLoginPage() {
                     <input type="checkbox" checked={remember} onChange={() => setRemember(!remember)} className="rounded border-slate-300" />
                     Remember me
                   </label>
-                  <a href="#" className="font-medium text-fuchsia-600">Forgot password?</a>
+                  <a href="#" onClick={(e) => { e.preventDefault(); alert("Password recovery is currently disabled. Please contact your system administrator."); }} className="font-medium text-fuchsia-600">Forgot password?</a>
                 </div>
 
-                <button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 to-purple-600 px-4 py-3 font-semibold text-white shadow-lg shadow-fuchsia-200 transition hover:scale-[1.01] disabled:opacity-70">
+                <button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 to-purple-600 px-4 py-3 font-semibold text-white shadow-lg shadow-fuchsia-200 transition hover:scale-[1.01] disabled:opacity-70 cursor-pointer">
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
                   {loading ? 'Signing in…' : 'Login'}
-                </button>
-
-                <button type="button" className="flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200">
-                  Continue with Google
                 </button>
               </form>
 

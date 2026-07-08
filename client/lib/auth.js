@@ -1,25 +1,32 @@
+import { loginData } from './login';
+
 const AUTH_STORAGE_KEY = 'invoicehub-auth';
 const USERS_STORAGE_KEY = 'invoicehub-users';
 
 // ============ Core Storage Functions ============
 
 export function getStoredAuth() {
+  if (loginData.auth) return loginData.auth;
   if (typeof window === 'undefined') return null;
 
   try {
     const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    const parsed = raw ? JSON.parse(raw) : null;
+    loginData.auth = parsed;
+    return parsed;
   } catch {
     return null;
   }
 }
 
 export function setStoredAuth(role, user) {
+  loginData.auth = { role, user };
   if (typeof window === 'undefined') return;
-  window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ role, user }));
+  window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(loginData.auth));
 }
 
 export function clearStoredAuth() {
+  loginData.auth = null;
   if (typeof window === 'undefined') return;
   window.localStorage.removeItem(AUTH_STORAGE_KEY);
 }
@@ -38,16 +45,19 @@ export function getAuthUser(role) {
 // ============ User Registration & Login ============
 
 function getAllUsers() {
+  if (loginData.users.length) return loginData.users;
   if (typeof window === 'undefined') return [];
   try {
     const raw = window.localStorage.getItem(USERS_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    loginData.users = raw ? JSON.parse(raw) : [];
+    return loginData.users;
   } catch {
     return [];
   }
 }
 
 function saveAllUsers(users) {
+  loginData.users = users;
   if (typeof window === 'undefined') return;
   window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
 }
@@ -108,22 +118,30 @@ export function loginSeller(email, password) {
 
 // ============ Client Authentication ============
 
-export function registerClient(name, email, password) {
+export function registerClient(name, email, password, employeeId, department, role) {
   if (typeof window === 'undefined') return { success: false, error: 'Server-side only' };
 
   const users = getAllUsers();
   
-  // Check if user already exists
-  if (users.some(u => u.email === email && u.role === 'client')) {
-    return { success: false, error: 'Email already registered as client' };
+  // Check if email already exists for client roles
+  const normalizedRole = role.toLowerCase();
+  if (users.some(u => u.email === email && ['manager', 'hr', 'accountant'].includes(u.role))) {
+    return { success: false, error: 'Email already registered' };
+  }
+
+  // Check if Employee ID already exists
+  if (users.some(u => u.employeeId === employeeId && ['manager', 'hr', 'accountant'].includes(u.role))) {
+    return { success: false, error: 'Employee ID already registered' };
   }
 
   const newUser = {
     id: `client-${Date.now()}`,
-    role: 'client',
+    role: normalizedRole,
     name,
     email,
     password: hashPassword(password),
+    employeeId,
+    department,
     createdAt: new Date().toISOString(),
   };
 
@@ -133,22 +151,32 @@ export function registerClient(name, email, password) {
   return { success: true, user: newUser };
 }
 
-export function loginClient(email, password) {
+export function loginClient(email, password, role) {
   if (typeof window === 'undefined') return { success: false, error: 'Server-side only' };
 
   const users = getAllUsers();
-  const user = users.find(u => u.email === email && u.role === 'client');
+  const normalizedRole = role.toLowerCase();
+  const user = users.find(u => u.email === email && u.role === normalizedRole);
 
   if (!user) {
-    return { success: false, error: 'Client account not found' };
+    return { success: false, error: `Account not found with role: ${role}` };
   }
 
   if (!verifyPassword(password, user.password)) {
     return { success: false, error: 'Invalid password' };
   }
 
-  setStoredAuth('client', { name: user.name, email: user.email, id: user.id });
-  return { success: true, user: { name: user.name, email: user.email, id: user.id } };
+  const userSessionData = { 
+    name: user.name, 
+    email: user.email, 
+    id: user.id,
+    employeeId: user.employeeId,
+    department: user.department,
+    role: user.role
+  };
+
+  setStoredAuth(normalizedRole, userSessionData);
+  return { success: true, user: userSessionData };
 }
 
 // ============ Session Management ============
