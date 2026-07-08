@@ -176,10 +176,7 @@ export default function CreateInvoicePage() {
     }
   };
 
-  const subtotal = items.reduce((sum, item) => sum + item.quantity * item.price, 0);
-  const gstAmount = items.reduce((sum, item) => sum + item.quantity * item.price * (item.gst / 100), 0);
-  const total = subtotal + gstAmount - discount + roundOff;
-  const invoiceNumber = useMemo(() => `INV-${String(new Date().getFullYear()).slice(-2)}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(Math.floor(Math.random() * 9000) + 1000)}`, []);
+
   const handleCustomerPresetChange = (id) => {
     const cust = customersData.find(c => c.id === id);
     if (cust) {
