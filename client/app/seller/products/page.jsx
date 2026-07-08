@@ -129,7 +129,7 @@ export default function ProductsPage() {
 
                       <div className="flex justify-between items-center">
                         <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                          Stock: {product.stock}
+                          Stock: {product.stock != null ? product.stock : 'N/A'}
                         </span>
                         <StatusBadge status={product.status} />
                       </div>
