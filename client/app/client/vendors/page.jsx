@@ -12,6 +12,7 @@ import { Mail, Phone, Plus, MapPin, Building, FileText, User } from 'lucide-reac
 export default function VendorsPage() {
   const [isDark, setIsDark] = useState(false);
   const [searchValue, setSearchValue] = useState('');
+  const [vendors, setVendors] = useState(mockVendors);
 
   const filteredVendors = useMemo(() => {
     return vendors.filter((vendor) =>
@@ -31,8 +32,6 @@ export default function VendorsPage() {
       document.documentElement.classList.remove('dark');
     }
   }, [isDark]);
-
-  const [vendors, setVendors] = useState(mockVendors);
   
   // Modals & Details State
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
