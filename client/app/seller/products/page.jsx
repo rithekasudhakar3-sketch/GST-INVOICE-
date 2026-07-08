@@ -2,9 +2,9 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/Navbar';
 import { Sidebar } from '@/components/Sidebar';
-import { SearchBar } from '@/components/SearchBar';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatCurrency, downloadCsv } from '@/lib/utils';
 import { mockProducts } from '@/lib/mockData';
@@ -13,6 +13,7 @@ import { Modal } from '@/components/Modal';
 import { Toast } from '@/components/Toast';
 
 export default function ProductsPage() {
+  const router = useRouter();
   const [isDark, setIsDark] = useState(false);
   
   // Sync dark mode class to root HTML
@@ -63,9 +64,19 @@ export default function ProductsPage() {
     return result;
   }, [products, searchValue, filterCategory]);
 
-  const handleViewDetails = (product) => {
-    setSelectedProduct(product);
-    setIsDetailsOpen(true);
+  const handleEdit = (id) => {
+    alert(`Editing product with ID: ${id}`);
+    router.push(`/seller/products/edit/${id}`);
+  };
+
+  const handleDelete = (id) => {
+    if (confirm('Are you sure you want to delete this product?')) {
+      setProducts(prevProducts => prevProducts.filter(p => p.id !== id));
+    }
+  };
+
+  const handleViewDetails = (id) => {
+    router.push(`/seller/products/${id}`);
   };
 
   const handleInputChange = (e) => {
@@ -192,12 +203,7 @@ export default function ProductsPage() {
             </div>
 
             {/* Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <SearchBar
-                placeholder="Search products..."
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-              />
+            <div className="flex justify-end mb-6">
               <select
                 value={filterCategory}
                 onChange={(e) => setFilterCategory(e.target.value)}
@@ -226,10 +232,16 @@ export default function ProductsPage() {
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute top-2 right-2 flex gap-2">
-                      <button className="p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                      <button
+                        onClick={() => handleEdit(product.id)}
+                        className="p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      >
                         <Edit2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                       </button>
-                      <button className="p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                      <button
+                        onClick={() => handleDelete(product.id)}
+                        className="p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      >
                         <Trash2 className="w-4 h-4 text-red-600" />
                       </button>
                     </div>
@@ -277,8 +289,8 @@ export default function ProductsPage() {
                         <AlertTriangle className="h-4 w-4" /> Low stock alert
                       </div>
                     )}
-                    <button 
-                      onClick={() => handleViewDetails(product)}
+                    <button
+                      onClick={() => handleViewDetails(product.id)}
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors cursor-pointer text-sm"
                     >
                       View Details
