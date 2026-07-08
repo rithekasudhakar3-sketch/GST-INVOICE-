@@ -1,20 +1,36 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Bell, Settings, LogOut, Moon, Sun } from 'lucide-react';
 import { Avatar } from './Avatar';
 import { SearchBar } from './SearchBar';
-import { mockUsers, mockNotifications } from '@/lib/mockData';
+import { mockNotifications } from '@/lib/mockData';
+import { getCurrentUser, logout } from '@/lib/auth';
 
 export function Navbar({ user, role, onThemeToggle, isDark }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [searchValue, setSearchValue] = useState('');
+  const [userData, setUserData] = useState(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const currentUser = getCurrentUser();
+    setUserData(currentUser);
+  }, []);
 
   const unreadNotifications = mockNotifications.filter(n => !n.read);
 
-  const userData = role === 'seller' ? mockUsers.seller : mockUsers.client;
+  if (!userData) {
+    return null;
+  }
+
+  const handleLogout = () => {
+    logout();
+    router.replace(role === 'seller' ? '/seller/login' : '/client/login');
+  };
 
   return (
     <nav className={`${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} border-b backdrop-blur-sm sticky top-0 z-40`}>
@@ -97,7 +113,7 @@ export function Navbar({ user, role, onThemeToggle, isDark }) {
                 onClick={() => setShowProfile(!showProfile)}
                 className="flex items-center gap-2 hover:opacity-80"
               >
-                <Avatar src={userData.avatar} name={userData.name} size="sm" />
+                <Avatar src="" name={userData.name} size="sm" />
               </button>
 
               {showProfile && (
@@ -114,7 +130,7 @@ export function Navbar({ user, role, onThemeToggle, isDark }) {
                     <Settings className="w-4 h-4" />
                     <span>Settings</span>
                   </Link>
-                  <button className={`w-full text-left flex items-center gap-2 p-4 text-red-600 ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}>
+                  <button onClick={handleLogout} className={`w-full text-left flex items-center gap-2 p-4 text-red-600 ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}>
                     <LogOut className="w-4 h-4" />
                     <span>Logout</span>
                   </button>

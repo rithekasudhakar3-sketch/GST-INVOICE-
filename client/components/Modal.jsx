@@ -14,18 +14,27 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className={`bg-white rounded-xl shadow-lg ${sizeClasses[size]} w-full mx-4`}>
-        <div className="flex justify-between items-center border-b p-6">
-          <h2 className="text-xl font-bold text-gray-900">{title}</h2>
+    <div 
+      className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      <div 
+        className={`bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 ${sizeClasses[size]} w-full mx-auto overflow-hidden animate-in zoom-in-95 duration-200`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex justify-between items-center border-b border-gray-100 dark:border-gray-800 p-5 sm:p-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded-lg"
+            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="p-6">
+        
+        {/* Content */}
+        <div className="p-5 sm:p-6 max-h-[calc(100vh-10rem)] overflow-y-auto">
           {children}
         </div>
       </div>
