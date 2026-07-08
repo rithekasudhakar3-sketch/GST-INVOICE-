@@ -1,14 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight, BarChart3, FileText, Users, CreditCard } from 'lucide-react';
 
 export default function HomePage() {
   const [isDark, setIsDark] = useState(false);
 
+  // Sync dark mode class to root HTML
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+    } else {
+      document.documentElement.classList.add('light');
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDark]);
+
   return (
-    <div className={`${isDark ? 'bg-gray-950 text-white' : 'bg-white'} min-h-screen`}>
+    <div className={`${isDark ? 'bg-gray-950 text-white' : 'bg-white text-gray-900'} min-h-screen transition-colors duration-300`}>
       {/* Navigation */}
       <nav className={`${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} border-b backdrop-blur-sm sticky top-0 z-40`}>
         <div className="px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
@@ -22,7 +33,7 @@ export default function HomePage() {
           </div>
           <button
             onClick={() => setIsDark(!isDark)}
-            className={`px-4 py-2 rounded-lg font-medium ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
+            className={`px-4 py-2 rounded-lg font-medium cursor-pointer ${isDark ? 'bg-gray-800 hover:bg-gray-700 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
           >
             {isDark ? '☀️ Light' : '🌙 Dark'}
           </button>

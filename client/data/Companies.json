@@ -1,0 +1,34 @@
+[
+  {
+    "id": "comp1",
+    "name": "Acme Industrial Solutions",
+    "tagline": "Engineering Excellence, Delivered.",
+    "gstin": "27AABCA1234F1Z5",
+    "pan": "AABCA1234F",
+    "address": "101, Tech Park, Phase 2, Hinjewadi",
+    "city": "Pune",
+    "state": "Maharashtra",
+    "stateCode": "27",
+    "pincode": "411057",
+    "email": "billing@acmesolutions.in",
+    "phone": "+91 20 4567 8901",
+    "website": "www.acmesolutions.in",
+    "logo": "https://api.dicebear.com/7.x/initials/svg?seed=AIS"
+  },
+  {
+    "id": "comp2",
+    "name": "Vortex Trading Corp",
+    "tagline": "Global Logistics & Fast Trading Solutions.",
+    "gstin": "29AACCV5678B2Z2",
+    "pan": "AACCV5678B",
+    "address": "56, Industrial Suburb, Yeshwanthpur",
+    "city": "Bangalore",
+    "state": "Karnataka",
+    "stateCode": "29",
+    "pincode": "560022",
+    "email": "finance@vortextrading.com",
+    "phone": "+91 80 2345 6789",
+    "website": "www.vortextrading.com",
+    "logo": "https://api.dicebear.com/7.x/initials/svg?seed=VTC"
+  }
+]
