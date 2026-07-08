@@ -1,0 +1,8 @@
+[
+  { "rate": 0, "label": "Exempt (0%)" },
+  { "rate": 0.25, "label": "Uncut Gemstones (0.25%)" },
+  { "rate": 3, "label": "Precious Metals (3%)" },
+  { "rate": 5, "label": "Daily Essentials (5%)" },
+  { "rate": 18, "label": "Standard Rate (18%)" },
+  { "rate": 40, "label": "Luxury / Sin Goods (40%)" }
+]

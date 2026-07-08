@@ -1,0 +1,20 @@
+[
+  {
+    "id": "bank1",
+    "bankName": "State Bank of India",
+    "accountHolder": "Acme Industrial Solutions",
+    "accountNumber": "30459201934",
+    "ifscCode": "SBIN0000300",
+    "branch": "Hinjewadi Main Branch, Pune",
+    "upiId": "acmeind@sbi"
+  },
+  {
+    "id": "bank2",
+    "bankName": "HDFC Bank Ltd",
+    "accountHolder": "Vortex Trading Corp",
+    "accountNumber": "50200045678912",
+    "ifscCode": "HDFC0000102",
+    "branch": "Yeshwanthpur Branch, Bangalore",
+    "upiId": "vortextrade@hdfc"
+  }
+]
