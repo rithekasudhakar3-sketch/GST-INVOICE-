@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { CustomerDetailsDrawer } from '@/components/CustomerDetailsDrawer';
-import Link from 'next/link';
 import { useState, useMemo, useEffect } from 'react';
+import Link from 'next/link';
+import { CustomerDetailsDrawer } from '@/components/CustomerDetailsDrawer';
 import { Navbar } from '@/components/Navbar';
 import { Sidebar } from '@/components/Sidebar';
 import { SearchBar } from '@/components/SearchBar';
@@ -11,7 +10,6 @@ import { Pagination } from '@/components/Pagination';
 import { formatCurrency, formatDate, downloadCsv } from '@/lib/utils';
 import { Modal } from '@/components/Modal';
 import { Toast } from '@/components/Toast';
-import { formatCurrency, formatDate } from '@/lib/utils';
 import { mockCustomers } from '@/lib/mockData';
 import { Plus, Edit2, Trash2, Phone, Mail, MapPin, Building, FileText, CheckCircle } from 'lucide-react';
 
@@ -39,7 +37,6 @@ export default function CustomersPage() {
 
   // Modals & Details State
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
   
   // Form State
@@ -74,8 +71,7 @@ export default function CustomersPage() {
     }
 
     return filtered;
-  }, [searchValue, sortBy, activeFilter]);
-  }, [customers, searchValue, sortBy]);
+  }, [customers, searchValue, sortBy, activeFilter]);
 
   const totalPages = Math.ceil(filteredAndSorted.length / itemsPerPage);
   const filterOptions = ['all', ...new Set(mockCustomers.map((customer) => customer.city))];
@@ -309,9 +305,6 @@ export default function CustomersPage() {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => setSelectedCustomer(customer)}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors"
                   <button 
                     onClick={() => handleViewDetails(customer)}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors cursor-pointer text-sm"

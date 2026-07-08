@@ -7,12 +7,9 @@ import { Sidebar } from '@/components/Sidebar';
 import { SearchBar } from '@/components/SearchBar';
 import { Pagination } from '@/components/Pagination';
 import { formatCurrency, formatDate, downloadCsv } from '@/lib/utils';
-import { mockInvoices } from '@/lib/mockData';
-import { Plus, Eye, Download, Send, Trash2, Copy } from 'lucide-react';
-import { Modal } from '@/components/Modal';
-import { formatCurrency, formatDate } from '@/lib/utils';
 import { mockInvoices, mockCustomers } from '@/lib/mockData';
-import { Plus, Eye, Download, Send, Trash2, Calendar, FileText, User, Receipt } from 'lucide-react';
+import { Plus, Eye, Download, Send, Trash2, Copy, Calendar, FileText, User, Receipt } from 'lucide-react';
+import { Modal } from '@/components/Modal';
 
 export default function InvoicesPage() {
   const [isDark, setIsDark] = useState(false);
@@ -140,13 +137,6 @@ export default function InvoicesPage() {
                   Create Invoice
                 </Link>
               </div>
-              <Link
-                href="/seller/invoices/create"
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-              >
-                <Plus className="w-5 h-5" />
-                Create Invoice
-              </Link>
             </div>
 
             {feedback && (
@@ -248,25 +238,37 @@ export default function InvoicesPage() {
                         </td>
                         <td className="py-4 px-6">
                           <div className="flex gap-2">
-                            <button 
+                            <button
                               onClick={() => handleViewInvoice(invoice)}
-                              className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg text-gray-500 dark:text-gray-400 transition-colors" 
-                              title="View"
+                              className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg text-blue-600 dark:text-blue-400 transition-colors"
+                              title="View Details"
                             >
                               <Eye className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                             </button>
-                            <button className="p-1.5 hover:bg-gray-200 rounded-lg" title="Duplicate" onClick={() => handleDuplicate(invoice.id)}>
+                            <button
+                              onClick={() => handleDuplicate(invoice.id)}
+                              className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg text-gray-500 dark:text-gray-400 transition-colors"
+                              title="Duplicate"
+                            >
                               <Copy className="w-4 h-4" />
                             </button>
-                            <button className="p-1.5 hover:bg-gray-200 rounded-lg" title="Print" onClick={() => handlePrint(invoice.id)}>
-                            <button className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg text-gray-500 dark:text-gray-400 transition-colors" title="Download">
+                            <button
+                              className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg text-gray-500 dark:text-gray-400 transition-colors"
+                              title="Download"
+                            >
                               <Download className="w-4 h-4" />
                             </button>
-                            <button className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg text-gray-500 dark:text-gray-400 transition-colors" title="Send">
+                            <button
+                              className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg text-gray-500 dark:text-gray-400 transition-colors"
+                              title="Send"
+                            >
                               <Send className="w-4 h-4" />
                             </button>
-                            <button className="p-1.5 hover:bg-gray-200 rounded-lg text-red-600" title="Delete" onClick={() => handleDelete(invoice.id)}>
-                            <button className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg text-red-600 transition-colors" title="Delete">
+                            <button
+                              onClick={() => handleDelete(invoice.id)}
+                              className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg text-red-600 transition-colors"
+                              title="Delete"
+                            >
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>

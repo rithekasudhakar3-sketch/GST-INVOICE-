@@ -1,27 +1,5 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { Navbar } from '@/components/Navbar';
-import { Sidebar } from '@/components/Sidebar';
-import { formatCurrency } from '@/lib/utils';
-import { mockCustomers, mockProducts } from '@/lib/mockData';
-import { InvoicePreview } from '@/components/InvoicePreview';
-import { Plus, X, Download, Sparkles, FileText, BadgePercent } from 'lucide-react';
-
-export default function CreateInvoicePage() {
-  const [isDark, setIsDark] = useState(false);
-  const [items, setItems] = useState([]);
-  const [selectedCustomer, setSelectedCustomer] = useState('');
-  const [discount, setDiscount] = useState(0);
-  const [notes, setNotes] = useState('Thank you for your business.');
-  const [terms, setTerms] = useState('Payment due within 30 days.');
-  const [roundOff, setRoundOff] = useState(0);
-  const [companyLogo, setCompanyLogo] = useState('');
-  const [showPreview, setShowPreview] = useState(true);
-  const [selectedCustomerData, setSelectedCustomerData] = useState(null);
-
-  const addItem = () => {
-    setItems([...items, { id: Date.now(), product: '', quantity: 1, price: 0, gst: 18 }]);
 import { useState, useEffect, useRef } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { 
@@ -409,12 +387,6 @@ export default function CreateInvoicePage() {
               <div className="flex flex-col">
                 <label className="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-1">Load Supplier Preset</label>
                 <select
-                  value={selectedCustomer}
-                  onChange={(e) => {
-                    setSelectedCustomer(e.target.value);
-                    setSelectedCustomerData(mockCustomers.find((customer) => customer.id === e.target.value) || null);
-                  }}
-                  className={`w-full ${isDark ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200'} border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   value={formValues.selectedSupplierId}
                   onChange={(e) => {
                     setValue('selectedSupplierId', e.target.value);
@@ -426,36 +398,6 @@ export default function CreateInvoicePage() {
                 </select>
               </div>
 
-              {/* Invoice Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div>
-                  <label className={`block text-sm font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    Invoice Number
-                  </label>
-                  <input
-                    readOnly
-                    value={invoiceNumber}
-                    className={`w-full ${isDark ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200'} border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  />
-                </div>
-                <div>
-                  <label className={`block text-sm font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    Invoice Date
-                  </label>
-                  <input
-                    type="date"
-                    defaultValue={new Date().toISOString().split('T')[0]}
-                    className={`w-full ${isDark ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200'} border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  />
-                </div>
-                <div>
-                  <label className={`block text-sm font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    Due Date
-                  </label>
-                  <input
-                    type="date"
-                    className={`w-full ${isDark ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200'} border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  />
               <div className="flex flex-col">
                 <label className="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider mb-1">Load Customer Preset</label>
                 <select
@@ -638,23 +580,7 @@ export default function CreateInvoicePage() {
                 )}
               </div>
 
-              <div className="mb-6 rounded-2xl border border-dashed border-blue-300 bg-blue-50/70 p-4 text-sm text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300">
-                <div className="flex items-center gap-2 font-semibold"><Sparkles className="h-4 w-4" /> Live invoice preview is enabled</div>
-                <p className="mt-1">Changes to items, discount, notes, and branding are reflected instantly.</p>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                <div>
-                  <label className={`block text-sm font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    Notes
-                  </label>
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Invoice notes..."
-                    rows="4"
-                    className={`w-full ${isDark ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200'} border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  />
               {/* SECTION 4: PRODUCT ITEM TABLE */}
               <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm overflow-hidden">
                 <div 
@@ -773,36 +699,6 @@ export default function CreateInvoicePage() {
               </div>
             </form>
           </div>
-
-              {showPreview && (
-                <div className="mb-8">
-                  <InvoicePreview
-                    invoice={{ invoiceNumber, invoiceDate: new Date().toISOString().split('T')[0], dueDate: new Date().toISOString().split('T')[0] }}
-                    company={{ companyName: 'Acme Corp', gstin: '18AABCT1234H1Z0', address: '123 Market Street, Mumbai', phone: '+91 9876543210', authorizedName: 'John Doe', logo: companyLogo }}
-                    customer={selectedCustomerData || { name: 'Customer Name', address: 'Customer Address', gstin: 'GSTIN' }}
-                    items={items.map((item) => ({ ...item, name: mockProducts.find((product) => product.id === item.product)?.name || 'Item' }))}
-                    discount={discount}
-                    notes={notes}
-                    terms={terms}
-                    isDark={isDark}
-                  />
-                </div>
-              )}
-
-              <div className="flex gap-4 justify-end">
-                <button className={`${isDark ? 'bg-gray-800 hover:bg-gray-700 text-white' : 'bg-gray-200 hover:bg-gray-300'} px-6 py-2 rounded-lg font-medium transition-colors`}>
-                  Save Draft
-                </button>
-                <button
-                  onClick={() => setShowPreview((current) => !current)}
-                  className={`${isDark ? 'bg-gray-800 hover:bg-gray-700 text-white' : 'bg-gray-200 hover:bg-gray-300'} flex items-center gap-2 px-6 py-2 rounded-lg font-medium transition-colors`}
-                >
-                  <Download className="w-4 h-4" />
-                  {showPreview ? 'Hide Preview' : 'Preview'}
-                </button>
-                <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
-                  Create Invoice
-                </button>
           {/* Right Panel: Live Invoice Preview Sheet */}
           <div className="w-full xl:w-5/12 h-[calc(100vh-64px)] bg-gray-150 dark:bg-gray-900 overflow-y-auto flex flex-col justify-between select-none border-t xl:border-t-0 border-gray-200 dark:border-gray-800">
             {/* Action Bar */}

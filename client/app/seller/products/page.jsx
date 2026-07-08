@@ -7,12 +7,9 @@ import { SearchBar } from '@/components/SearchBar';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatCurrency, downloadCsv } from '@/lib/utils';
 import { mockProducts } from '@/lib/mockData';
-import { Plus, Edit2, Trash2, Barcode, PackageSearch, AlertTriangle } from 'lucide-react';
+import { Plus, Edit2, Trash2, Barcode, PackageSearch, AlertTriangle, Tag, DollarSign, Percent, Layers, Activity } from 'lucide-react';
 import { Modal } from '@/components/Modal';
 import { Toast } from '@/components/Toast';
-import { formatCurrency } from '@/lib/utils';
-import { mockProducts } from '@/lib/mockData';
-import { Plus, Edit2, Trash2, Tag, DollarSign, Percent, Layers, Activity } from 'lucide-react';
 
 export default function ProductsPage() {
   const [isDark, setIsDark] = useState(false);
@@ -279,7 +276,6 @@ export default function ProductsPage() {
                         <AlertTriangle className="h-4 w-4" /> Low stock alert
                       </div>
                     )}
-                    <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors text-sm">
                     <button 
                       onClick={() => handleViewDetails(product)}
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors cursor-pointer text-sm"

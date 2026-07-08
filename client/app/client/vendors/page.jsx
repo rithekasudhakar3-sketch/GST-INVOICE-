@@ -1,7 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { Sidebar } from '@/components/Sidebar';
 import { Modal } from '@/components/Modal';
@@ -15,12 +14,12 @@ export default function VendorsPage() {
   const [searchValue, setSearchValue] = useState('');
 
   const filteredVendors = useMemo(() => {
-    return mockVendors.filter((vendor) =>
+    return vendors.filter((vendor) =>
       vendor.name.toLowerCase().includes(searchValue.toLowerCase()) ||
       vendor.email.toLowerCase().includes(searchValue.toLowerCase()) ||
       vendor.contactPerson.toLowerCase().includes(searchValue.toLowerCase())
     );
-  }, [searchValue]);
+  }, [vendors, searchValue]);
 
   // Sync dark mode class to root HTML
   useEffect(() => {
@@ -203,7 +202,6 @@ export default function VendorsPage() {
             {/* Vendors Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredVendors.map((vendor) => (
-              {vendors.map((vendor) => (
                 <div
                   key={vendor.id}
                   className={`${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} border rounded-xl p-6 hover:shadow-lg transition-all`}
