@@ -8,7 +8,7 @@ import { SearchBar } from '@/components/SearchBar';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatCurrency, downloadCsv } from '@/lib/utils';
 import { mockProducts } from '@/lib/mockData';
-import { Plus, Edit2, Trash2, Barcode, PackageSearch, AlertTriangle, Tag, DollarSign, Percent, Layers, Activity } from 'lucide-react';
+import { Plus, Edit2, Trash2, Barcode, PackageSearch, AlertTriangle, Tag, DollarSign, Percent, Layers, Activity, Eye, Copy, Package, IndianRupee, Share2, Star } from 'lucide-react';
 import { Modal } from '@/components/Modal';
 import { Toast } from '@/components/Toast';
 
@@ -34,6 +34,10 @@ export default function ProductsPage() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isStockOpen, setIsStockOpen] = useState(false);
+  const [isPriceOpen, setIsPriceOpen] = useState(false);
+  const [newStock, setNewStock] = useState('');
+  const [newPrice, setNewPrice] = useState('');
 
   // Form State
   const [formData, setFormData] = useState({
@@ -66,6 +70,101 @@ export default function ProductsPage() {
   const handleViewDetails = (product) => {
     setSelectedProduct(product);
     setIsDetailsOpen(true);
+  };
+
+  const handleQuickPreview = (product) => {
+    setSelectedProduct(product);
+    setIsDetailsOpen(true);
+  };
+
+  const handleCopyProductId = (product) => {
+    navigator.clipboard.writeText(product.id)
+      .then(() => {
+        setToast({
+          message: `Product ID copied to clipboard: ${product.id}`,
+          type: 'success'
+        });
+      })
+      .catch(() => {
+        setToast({
+          message: 'Failed to copy product ID',
+          type: 'error'
+        });
+      });
+  };
+
+  const handleUpdateStock = (product) => {
+    setSelectedProduct(product);
+    setNewStock(product.stock !== null ? String(product.stock) : '0');
+    setIsStockOpen(true);
+  };
+
+  const handleUpdatePrice = (product) => {
+    setSelectedProduct(product);
+    setNewPrice(String(product.price));
+    setIsPriceOpen(true);
+  };
+
+  const handleShareProduct = (product) => {
+    const shareText = `Product: ${product.name} (ID: ${product.id}) - Price: ${formatCurrency(product.price)}`;
+    navigator.clipboard.writeText(shareText)
+      .then(() => {
+        setToast({
+          message: 'Product details copied to clipboard!',
+          type: 'success'
+        });
+      })
+      .catch(() => {
+        setToast({
+          message: 'Failed to copy product details',
+          type: 'error'
+        });
+      });
+  };
+
+  const handleToggleFeatured = (product) => {
+    setProducts(prev => prev.map(p => p.id === product.id ? { ...p, featured: !p.featured } : p));
+    const isFeaturedNow = !product.featured;
+    setToast({
+      message: isFeaturedNow ? `${product.name} marked as Featured!` : `${product.name} removed from Featured!`,
+      type: 'success'
+    });
+  };
+
+  const handleStockSubmit = (e) => {
+    e.preventDefault();
+    const stockNum = Number(newStock);
+    if (isNaN(stockNum) || stockNum < 0 || !Number.isInteger(stockNum)) {
+      setToast({
+        message: 'Stock must be a non-negative integer',
+        type: 'error'
+      });
+      return;
+    }
+    setProducts(prev => prev.map(p => p.id === selectedProduct.id ? { ...p, stock: stockNum } : p));
+    setIsStockOpen(false);
+    setToast({
+      message: `Stock updated successfully for ${selectedProduct.name}!`,
+      type: 'success'
+    });
+  };
+
+  const handlePriceSubmit = (e) => {
+    e.preventDefault();
+    const priceNum = Number(newPrice);
+    if (isNaN(priceNum) || priceNum <= 0) {
+      setToast({
+        message: 'Price must be a number greater than 0',
+        type: 'error'
+      });
+      return;
+    }
+    setProducts(prev => prev.map(p => p.id === selectedProduct.id ? { ...p, price: priceNum } : p));
+    setIsPriceOpen(false);
+    setToast({
+      message: `Price updated successfully for ${selectedProduct.name}!`,
+      type: 'success'
+    });
   };
 
   const handleInputChange = (e) => {
@@ -277,6 +376,62 @@ export default function ProductsPage() {
                         <AlertTriangle className="h-4 w-4" /> Low stock alert
                       </div>
                     )}
+
+                    {/* Quick action icons */}
+                    <div className="flex items-center justify-between gap-1.5 mt-3 mb-4">
+                      <button
+                        onClick={() => handleQuickPreview(product)}
+                        title="Quick Preview"
+                        className="p-1.5 rounded-lg border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                      >
+                        <Eye className="w-[18px] h-[18px] text-gray-600 dark:text-gray-400" />
+                      </button>
+
+                      <button
+                        onClick={() => handleCopyProductId(product)}
+                        title="Copy Product ID"
+                        className="p-1.5 rounded-lg border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                      >
+                        <Copy className="w-[18px] h-[18px] text-gray-600 dark:text-gray-400" />
+                      </button>
+
+                      <button
+                        onClick={() => handleUpdateStock(product)}
+                        title="Update Stock"
+                        className="p-1.5 rounded-lg border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                      >
+                        <Package className="w-[18px] h-[18px] text-gray-600 dark:text-gray-400" />
+                      </button>
+
+                      <button
+                        onClick={() => handleUpdatePrice(product)}
+                        title="Update Price"
+                        className="p-1.5 rounded-lg border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                      >
+                        <IndianRupee className="w-[18px] h-[18px] text-gray-600 dark:text-gray-400" />
+                      </button>
+
+                      <button
+                        onClick={() => handleToggleFeatured(product)}
+                        title="Mark as Featured"
+                        className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                          product.featured
+                            ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800 text-amber-500 fill-amber-500 hover:bg-amber-100 dark:hover:bg-amber-900/40'
+                            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
+                      >
+                        <Star className="w-[18px] h-[18px]" />
+                      </button>
+
+                      <button
+                        onClick={() => handleShareProduct(product)}
+                        title="Share Product"
+                        className="p-1.5 rounded-lg border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                      >
+                        <Share2 className="w-[18px] h-[18px] text-gray-600 dark:text-gray-400" />
+                      </button>
+                    </div>
+
                     <button 
                       onClick={() => handleViewDetails(product)}
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors cursor-pointer text-sm"
@@ -483,6 +638,107 @@ export default function ProductsPage() {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Update Stock Modal */}
+      <Modal
+        isOpen={isStockOpen}
+        onClose={() => setIsStockOpen(false)}
+        title="Update Stock"
+        size="sm"
+      >
+        {selectedProduct && (
+          <form onSubmit={handleStockSubmit} className="space-y-4">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                Product: <span className="font-semibold text-gray-900 dark:text-white">{selectedProduct.name}</span>
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Current Stock: <span className="font-semibold text-gray-900 dark:text-white">{selectedProduct.stock !== null ? selectedProduct.stock : 'N/A'}</span>
+              </p>
+              <label className="block text-sm font-medium mb-1.5 text-gray-700 dark:text-gray-300">
+                New Stock Quantity *
+              </label>
+              <input
+                type="number"
+                value={newStock}
+                onChange={(e) => setNewStock(e.target.value)}
+                className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                placeholder="0"
+                min="0"
+                step="1"
+                required
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <button
+                type="button"
+                onClick={() => setIsStockOpen(false)}
+                className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-900 dark:text-white px-5 py-2 rounded-lg font-semibold transition-colors cursor-pointer text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-semibold transition-colors cursor-pointer text-sm"
+              >
+                Save
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
+
+      {/* Update Price Modal */}
+      <Modal
+        isOpen={isPriceOpen}
+        onClose={() => setIsPriceOpen(false)}
+        title="Update Price"
+        size="sm"
+      >
+        {selectedProduct && (
+          <form onSubmit={handlePriceSubmit} className="space-y-4">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                Product: <span className="font-semibold text-gray-900 dark:text-white">{selectedProduct.name}</span>
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Current Price: <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(selectedProduct.price)}</span>
+              </p>
+              <label className="block text-sm font-medium mb-1.5 text-gray-700 dark:text-gray-300">
+                New Price (INR) *
+              </label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-2 text-gray-500 text-sm">₹</span>
+                <input
+                  type="number"
+                  value={newPrice}
+                  onChange={(e) => setNewPrice(e.target.value)}
+                  className="w-full border border-gray-200 dark:border-gray-700 rounded-lg pl-8 pr-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  placeholder="0.00"
+                  min="0.01"
+                  step="0.01"
+                  required
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <button
+                type="button"
+                onClick={() => setIsPriceOpen(false)}
+                className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-900 dark:text-white px-5 py-2 rounded-lg font-semibold transition-colors cursor-pointer text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-semibold transition-colors cursor-pointer text-sm"
+              >
+                Save
+              </button>
+            </div>
+          </form>
+        )}
       </Modal>
 
       {/* Success Toast */}
