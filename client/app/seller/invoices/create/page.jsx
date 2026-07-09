@@ -28,10 +28,16 @@ import productsData from '../../../../data/Products.json';
 import gstRatesData from '../../../../data/GSTRates.json';
 import banksData from '../../../../data/Banks.json';
 
+import { supabase } from '../../../../utils/supabaseClient';
+
 export default function CreateInvoicePage() {
   const [isDark, setIsDark] = useState(false);
   const [toast, setToast] = useState(null);
   
+  // Dynamic presets from database
+  const [dbCustomers, setDbCustomers] = useState([]);
+  const [dbProducts, setDbProducts] = useState([]);
+
   // Modals state
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
@@ -79,7 +85,7 @@ export default function CreateInvoicePage() {
     
     // Preset Selections
     selectedSupplierId: companiesData[0]?.id || '',
-    selectedCustomerId: customersData[0]?.id || '',
+    selectedCustomerId: '',
     selectedBankId: banksData[0]?.id || '',
 
     // Supplier Fields
@@ -98,17 +104,17 @@ export default function CreateInvoicePage() {
     supplierLogo: companiesData[0]?.logo || '',
 
     // Customer Fields
-    isUnregistered: customersData[0]?.isUnregistered || false,
-    customerName: customersData[0]?.name || '',
-    customerGstin: customersData[0]?.gstin || '',
-    customerBillingAddress: customersData[0]?.billingAddress || '',
-    customerShippingAddress: customersData[0]?.shippingAddress || '',
-    customerContactPerson: customersData[0]?.contactPerson || '',
-    customerEmail: customersData[0]?.email || '',
-    customerPhone: customersData[0]?.phone || '',
-    customerState: customersData[0]?.state || '',
-    customerStateCode: customersData[0]?.stateCode || '',
-    customerPincode: customersData[0]?.pincode || '',
+    isUnregistered: false,
+    customerName: '',
+    customerGstin: '',
+    customerBillingAddress: '',
+    customerShippingAddress: '',
+    customerContactPerson: '',
+    customerEmail: '',
+    customerPhone: '',
+    customerState: '',
+    customerStateCode: '',
+    customerPincode: '',
 
     // Bank details fields
     bankName: banksData[0]?.bankName || '',
@@ -122,14 +128,14 @@ export default function CreateInvoicePage() {
     items: [
       {
         id: Date.now().toString(),
-        name: productsData[0]?.name || '',
-        description: productsData[0]?.description || '',
-        hsnCode: productsData[0]?.hsnCode || '',
-        quantity: 2,
-        unit: productsData[0]?.unit || 'PCS',
-        unitPrice: productsData[0]?.price || 0,
+        name: '',
+        description: '',
+        hsnCode: '',
+        quantity: 1,
+        unit: 'PCS',
+        unitPrice: 0,
         discount: 0,
-        gstRate: productsData[0]?.gstRate || 18
+        gstRate: 18
       }
     ]
   };
@@ -155,6 +161,54 @@ export default function CreateInvoicePage() {
   // Watch fields in real-time
   const formValues = watch();
 
+  // Load database presets for Customers, Products and Supplier profile on mount
+  useEffect(() => {
+    async function loadDbPresets() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const sellerId = session.user.id;
+
+        // Load customers
+        const { data: custData } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('seller_id', sellerId);
+        if (custData) setDbCustomers(custData);
+
+        // Load products
+        const { data: prodData } = await supabase
+          .from('products')
+          .select('*')
+          .eq('seller_id', sellerId);
+        if (prodData) setDbProducts(prodData);
+
+        // Load seller profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*, seller_profiles(*)')
+          .eq('id', sellerId)
+          .single();
+
+        if (profile) {
+          setValue('supplierName', profile.name || '');
+          setValue('supplierPhone', profile.phone || '');
+          setValue('supplierEmail', profile.email || '');
+          setValue('supplierAddress', profile.address || '');
+          
+          const sProf = profile.seller_profiles?.[0] || profile.seller_profiles || {};
+          setValue('supplierGstin', sProf.gstin || '');
+          setValue('bankName', sProf.bank_name || '');
+          setValue('accountNumber', sProf.bank_account_no || '');
+          setValue('ifscCode', sProf.bank_ifsc || '');
+        }
+      } catch (err) {
+        console.error('Error loading db presets:', err);
+      }
+    }
+    loadDbPresets();
+  }, [setValue]);
+
   // Load selected preset data helpers
   const handleSupplierPresetChange = (id) => {
     const comp = companiesData.find(c => c.id === id);
@@ -176,24 +230,21 @@ export default function CreateInvoicePage() {
     }
   };
 
-
   const handleCustomerPresetChange = (id) => {
-    const cust = customersData.find(c => c.id === id);
+    const cust = dbCustomers.find(c => c.id === id);
     if (cust) {
-      setValue('isUnregistered', cust.isUnregistered);
+      setValue('isUnregistered', false);
       setValue('customerName', cust.name);
-      setValue('customerGstin', cust.gstin);
-      setValue('customerBillingAddress', cust.billingAddress);
-      setValue('customerShippingAddress', cust.shippingAddress || cust.billingAddress);
-      setValue('customerContactPerson', cust.contactPerson || '');
+      setValue('customerGstin', cust.gstin || '');
+      setValue('customerBillingAddress', cust.billing_address || '');
+      setValue('customerShippingAddress', cust.billing_address || '');
+      setValue('customerContactPerson', cust.name);
       setValue('customerEmail', cust.email || '');
       setValue('customerPhone', cust.phone || '');
-      setValue('customerState', cust.state);
-      setValue('customerStateCode', cust.stateCode);
-      setValue('customerPincode', cust.pincode);
-      
-      setValue('placeOfSupply', cust.state);
-      showToast('success', `Customer preset loaded: ${cust.name}`);
+      setValue('customerState', cust.state || '');
+      setValue('customerPincode', cust.pincode || '');
+      setValue('placeOfSupply', cust.state || '');
+      showToast('success', `Customer loaded: ${cust.name}`);
     }
   };
 
@@ -285,9 +336,107 @@ export default function CreateInvoicePage() {
   };
 
   // Form Submit Handler
-  const onFormSubmit = (data) => {
-    console.log('Submitting Invoice Draft Data:', data);
-    showToast('success', `Invoice ${data.invoiceNumber} saved as draft successfully!`);
+  const onFormSubmit = async (data) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+      const sellerId = session.user.id;
+
+      // Resolve or auto-create customer dynamically
+      let customerId = data.selectedCustomerId;
+      if (!customerId) {
+        const existingCust = dbCustomers.find(c => c.name.toLowerCase() === data.customerName.trim().toLowerCase());
+        if (existingCust) {
+          customerId = existingCust.id;
+        } else {
+          if (!data.customerName.trim()) {
+            showToast('error', 'Please enter a Customer Name or select a preset.');
+            return;
+          }
+
+          // Create new customer row in DB
+          const { data: newCust, error: custErr } = await supabase
+            .from('customers')
+            .insert([{
+              seller_id: sellerId,
+              name: data.customerName.trim(),
+              gstin: data.customerGstin || '',
+              email: data.customerEmail || '',
+              phone: data.customerPhone || '',
+              billing_address: data.customerBillingAddress || '',
+              state: data.customerState || '',
+              pincode: data.customerPincode || ''
+            }])
+            .select()
+            .single();
+
+          if (custErr) throw custErr;
+          customerId = newCust.id;
+        }
+      }
+
+      // Calculations
+      const items = data.items || [];
+      const subtotal = items.reduce((sum, it) => sum + (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0), 0);
+      const gstAmount = items.reduce((sum, it) => sum + (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0) * ((Number(it.gstRate) || 0) / 100), 0);
+      const discount = Number(data.overallDiscount) || 0;
+      const total = subtotal + gstAmount - discount;
+
+      // 1. Insert parent invoice
+      const invoicePayload = {
+        seller_id: sellerId,
+        customer_id: customerId,
+        invoice_number: data.invoiceNumber,
+        invoice_date: data.invoiceDate,
+        due_date: data.dueDate,
+        subtotal: Math.round(subtotal),
+        gst_amount: Math.round(gstAmount),
+        discount: Math.round(discount),
+        total: Math.round(total),
+        status: (data.paymentStatus || 'Pending').toLowerCase(),
+        notes: data.notes || '',
+        terms: data.terms || ''
+      };
+
+      const { data: newInvoice, error: invoiceError } = await supabase
+        .from('invoices')
+        .insert([invoicePayload])
+        .select()
+        .single();
+
+      if (invoiceError) throw invoiceError;
+
+      // 2. Map generated parent ID and insert items
+      if (items.length > 0) {
+        const lineItemsPayload = items.map(item => ({
+          invoice_id: newInvoice.id,
+          product_id: item.product_id || null, // Optional FK association
+          name: item.name,
+          quantity: Number(item.quantity) || 1,
+          price: Number(item.unitPrice) || 0,
+          gst_rate: Number(item.gstRate) || 18
+        }));
+
+        const { error: itemsError } = await supabase
+          .from('invoice_items')
+          .insert(lineItemsPayload);
+
+        if (itemsError) {
+          // Rollback parent invoice row to ensure transactional safety
+          await supabase.from('invoices').delete().eq('id', newInvoice.id);
+          throw itemsError;
+        }
+      }
+
+      showToast('success', `Invoice ${data.invoiceNumber} saved successfully to database!`);
+      setTimeout(() => {
+        window.location.href = '/seller/invoices';
+      }, 1500);
+
+    } catch (err) {
+      console.error(err);
+      showToast('error', `Failed to save invoice: ${err.message}`);
+    }
   };
 
   // PDF Export Trigger
@@ -405,7 +554,8 @@ export default function CreateInvoicePage() {
                   }}
                   className="text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-1"
                 >
-                  {customersData.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  <option value="" disabled>Choose customer...</option>
+                  {dbCustomers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
 
@@ -598,7 +748,7 @@ export default function CreateInvoicePage() {
                         remove={remove}
                         watch={watch}
                         setValue={setValue}
-                        productsData={productsData}
+                        productsData={dbProducts}
                         gstRatesData={gstRatesData}
                         errors={errors}
                       />

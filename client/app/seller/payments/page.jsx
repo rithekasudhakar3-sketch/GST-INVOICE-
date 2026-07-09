@@ -1,24 +1,74 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { Sidebar } from '@/components/Sidebar';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { mockPayments } from '@/lib/mockData';
+import { supabase } from '@/utils/supabaseClient';
 import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
 
 export default function PaymentsPage() {
   const [isDark, setIsDark] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
+  const [payments, setPayments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchPayments = async () => {
+    setLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error } = await supabase
+        .from('payments')
+        .select(`
+          id,
+          amount,
+          status,
+          method,
+          payment_date,
+          reference_number,
+          invoices!inner(
+            seller_id,
+            invoice_number,
+            customers(name)
+          )
+        `)
+        .eq('invoices.seller_id', session.user.id);
+
+      if (error) throw error;
+
+      const mapped = (data || []).map(pay => ({
+        id: pay.id,
+        invoiceNumber: pay.invoices?.invoice_number || 'N/A',
+        customerName: pay.invoices?.customers?.name || 'Unknown Customer',
+        amount: pay.amount,
+        status: pay.status?.toLowerCase(),
+        method: pay.method,
+        date: pay.payment_date,
+        reference: pay.reference_number
+      }));
+
+      setPayments(mapped);
+    } catch (err) {
+      console.error('Error fetching payments:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPayments();
+  }, []);
 
   const filtered = filterStatus === 'all' 
-    ? mockPayments 
-    : mockPayments.filter(p => p.status === filterStatus);
+    ? payments 
+    : payments.filter(p => p.status === filterStatus);
 
   const stats = {
-    completed: mockPayments.filter(p => p.status === 'completed').reduce((sum, p) => sum + p.amount, 0),
-    pending: mockPayments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0),
-    total: mockPayments.reduce((sum, p) => sum + p.amount, 0),
+    completed: payments.filter(p => p.status === 'completed').reduce((sum, p) => sum + p.amount, 0),
+    pending: payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0),
+    total: payments.reduce((sum, p) => sum + p.amount, 0),
   };
 
   return (

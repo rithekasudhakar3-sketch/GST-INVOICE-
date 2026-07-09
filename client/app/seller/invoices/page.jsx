@@ -7,7 +7,7 @@ import { Sidebar } from '@/components/Sidebar';
 import { SearchBar } from '@/components/SearchBar';
 import { Pagination } from '@/components/Pagination';
 import { formatCurrency, formatDate, downloadCsv } from '@/lib/utils';
-import { mockInvoices, mockCustomers } from '@/lib/mockData';
+import { supabase } from '@/utils/supabaseClient';
 import { Plus, Eye, Download, Send, Trash2, Copy, Calendar, FileText, User, Receipt } from 'lucide-react';
 import { Modal } from '@/components/Modal';
 
@@ -29,7 +29,8 @@ export default function InvoicesPage() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('date');
   const [currentPage, setCurrentPage] = useState(1);
-  const [invoiceData, setInvoiceData] = useState(mockInvoices);
+  const [invoiceData, setInvoiceData] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState('');
   const itemsPerPage = 10;
 
@@ -37,15 +38,57 @@ export default function InvoicesPage() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
 
-  const filtered = useMemo(() => {
-    let result = invoiceData.filter(invoice =>
-      invoice.invoiceNumber.toLowerCase().includes(searchValue.toLowerCase()) ||
-      invoice.customerName.toLowerCase().includes(searchValue.toLowerCase())
-    );
+  const fetchInvoices = async () => {
+    setLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-    if (filterStatus !== 'all') {
-      result = result.filter(i => i.status === filterStatus);
+      let query = supabase
+        .from('invoices')
+        .select('*, customers(*)')
+        .eq('seller_id', session.user.id);
+
+      if (filterStatus !== 'all') {
+        query = query.eq('status', filterStatus);
+      }
+
+      if (searchValue.trim()) {
+        query = query.ilike('invoice_number', `%${searchValue}%`);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      // Map snake_case database properties to UI camelCase property names
+      const mapped = (data || []).map(inv => ({
+        ...inv,
+        invoiceNumber: inv.invoice_number,
+        invoiceDate: inv.invoice_date,
+        dueDate: inv.due_date,
+        customerName: inv.customers?.name || 'Unknown Customer',
+        customerEmail: inv.customers?.email || 'N/A',
+        customerGstin: inv.customers?.gstin || 'N/A',
+        customerAddress: inv.customers?.billing_address || 'N/A',
+        gstAmount: inv.gst_amount,
+        customerId: inv.customer_id
+      }));
+
+      setInvoiceData(mapped);
+    } catch (err) {
+      console.error(err);
+      setFeedback(`Failed to fetch invoices: ${err.message}`);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchInvoices();
+  }, [searchValue, filterStatus]);
+
+  const filtered = useMemo(() => {
+    let result = [...invoiceData];
 
     result = [...result].sort((a, b) => {
       if (sortBy === 'amount') return b.total - a.total;
@@ -53,21 +96,83 @@ export default function InvoicesPage() {
     });
 
     return result;
-  }, [searchValue, filterStatus, sortBy, invoiceData]);
+  }, [sortBy, invoiceData]);
 
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
 
-  const handleDuplicate = (id) => {
-    const invoice = invoiceData.find((item) => item.id === id);
-    if (!invoice) return;
-    const duplicated = { ...invoice, id: `${invoice.id}-copy-${Date.now()}`, invoiceNumber: `${invoice.invoiceNumber}-COPY`, createdAt: new Date().toISOString().split('T')[0] };
-    setInvoiceData([duplicated, ...invoiceData]);
-    setFeedback('Invoice duplicated successfully.');
+  const handleDuplicate = async (id) => {
+    try {
+      const { data: invoice, error: invoiceError } = await supabase
+        .from('invoices')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (invoiceError || !invoice) throw invoiceError || new Error('Invoice not found');
+
+      const { data: items, error: itemsError } = await supabase
+        .from('invoice_items')
+        .select('*')
+        .eq('invoice_id', id);
+      
+      if (itemsError) throw itemsError;
+
+      const newInvoiceNumber = `${invoice.invoice_number}-COPY-${Date.now().toString().substring(8)}`;
+      const { data: newInvoice, error: newInvoiceError } = await supabase
+        .from('invoices')
+        .insert([{
+          ...invoice,
+          id: undefined,
+          invoice_number: newInvoiceNumber,
+          created_at: new Date().toISOString(),
+          status: 'draft'
+        }])
+        .select()
+        .single();
+
+      if (newInvoiceError) throw newInvoiceError;
+
+      if (items && items.length > 0) {
+        const duplicatedItems = items.map(item => ({
+          ...item,
+          id: undefined,
+          invoice_id: newInvoice.id
+        }));
+
+        const { error: insertItemsError } = await supabase
+          .from('invoice_items')
+          .insert(duplicatedItems);
+        
+        if (insertItemsError) throw insertItemsError;
+      }
+
+      setFeedback('Invoice duplicated successfully.');
+      fetchInvoices();
+    } catch (err) {
+      console.error(err);
+      setFeedback(`Failed to duplicate invoice: ${err.message}`);
+    }
   };
 
-  const handleDelete = (id) => {
-    setInvoiceData(invoiceData.filter((invoice) => invoice.id !== id));
-    setFeedback('Invoice removed from history.');
+  const handleDelete = async (id) => {
+    const invoice = invoiceData.find((item) => item.id === id);
+    if (!invoice) return;
+    if (invoice.status === 'paid') {
+      setFeedback('Error: Cannot delete a paid invoice.');
+      return;
+    }
+
+    if (!confirm('Are you sure you want to delete this invoice?')) return;
+
+    try {
+      const { error } = await supabase.from('invoices').delete().eq('id', id);
+      if (error) throw error;
+      setFeedback('Invoice removed from history.');
+      fetchInvoices();
+    } catch (err) {
+      console.error(err);
+      setFeedback(`Failed to delete invoice: ${err.message}`);
+    }
   };
 
   const handlePrint = (id) => {
@@ -80,21 +185,15 @@ export default function InvoicesPage() {
     const rows = filtered.map((invoice) => [invoice.invoiceNumber, invoice.customerName, invoice.invoiceDate, String(invoice.total), invoice.status]);
     downloadCsv('sales.csv', headers, rows);
   };
+
   const paginatedData = filtered.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
-  const handleViewInvoice = (invoice) => {
-    // Find customer GSTIN/email for rich detail if available
-    const customerObj = mockCustomers.find(c => c.id === invoice.customerId);
-    const enrichedInvoice = {
-      ...invoice,
-      customerEmail: customerObj?.email || 'contact@client.com',
-      customerGstin: customerObj?.gstin || 'N/A',
-      customerAddress: customerObj?.address || 'N/A'
-    };
-    setSelectedInvoice(enrichedInvoice);
+  const handleViewInvoice = async (invoice) => {
+    // Invoice is already mapped and enriched with customers metadata
+    setSelectedInvoice(invoice);
     setIsDetailsOpen(true);
   };
 

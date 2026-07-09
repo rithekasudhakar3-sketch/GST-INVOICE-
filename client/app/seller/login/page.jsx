@@ -36,8 +36,9 @@ export default function SellerLoginPage() {
     if (!validateForm()) return;
     setLoading(true);
     setToast(null);
-    setTimeout(() => {
-      const result = loginSeller(email, password);
+    
+    try {
+      const result = await loginSeller(email, password);
       setLoading(false);
       
       if (result.success) {
@@ -46,9 +47,13 @@ export default function SellerLoginPage() {
           router.replace('/seller/dashboard');
         }, 800);
       } else {
-        setToast({ type: 'error', message: result.error });
+        const errorMsg = result.error?.message || (typeof result.error === 'string' ? result.error : 'Invalid credentials');
+        setToast({ type: 'error', message: errorMsg });
       }
-    }, 800);
+    } catch (err) {
+      setLoading(false);
+      setToast({ type: 'error', message: err.message || 'An error occurred' });
+    }
   };
 
   return (
@@ -77,9 +82,25 @@ export default function SellerLoginPage() {
                   <p className="text-sm font-semibold uppercase tracking-[0.25em] text-indigo-600">Seller Login</p>
                   <h2 className="mt-2 text-3xl font-semibold">Welcome back</h2>
                 </div>
-                <button onClick={() => setIsDark(!isDark)} className={`rounded-full px-3 py-2 text-sm ${isDark ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-700'}`}>
+                <button onClick={() => setIsDark(!isDark)} className={`rounded-full px-3 py-2 text-sm ${isDark ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-700'} cursor-pointer`}>
                   {isDark ? '☀️' : '🌙'}
                 </button>
+              </div>
+
+              {/* Portal Switcher Tab Control */}
+              <div className="mb-6">
+                <div className="inline-flex rounded-xl p-1 bg-slate-100 dark:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50">
+                  <span className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    I am a Seller
+                  </span>
+                  <Link
+                    href="/client/login"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+                  >
+                    I am a Client
+                  </Link>
+                </div>
               </div>
 
               <form className="space-y-4" onSubmit={handleSubmit}>

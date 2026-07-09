@@ -1,5 +1,9 @@
+import dns from 'dns';
 import dotenv from 'dotenv';
 import app from './app.js';
+
+// Configure DNS to resolve IPv6 addresses
+dns.setDefaultResultOrder('verbatim');
 
 // Load environment variables
 dotenv.config();

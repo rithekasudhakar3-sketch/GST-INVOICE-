@@ -16,6 +16,7 @@ export const InvoiceRow = ({
   const handleProductSelectionLocal = (prodId) => {
     const prod = productsData.find(p => p.id === prodId);
     if (prod) {
+      setValue(`items.${index}.product_id`, prod.id);
       setValue(`items.${index}.name`, prod.name);
       setValue(`items.${index}.description`, prod.description || '');
       setValue(`items.${index}.hsnCode`, prod.hsnCode || '');

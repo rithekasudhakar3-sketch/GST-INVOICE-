@@ -7,7 +7,7 @@ import { Sidebar } from '@/components/Sidebar';
 import { SearchBar } from '@/components/SearchBar';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatCurrency, downloadCsv } from '@/lib/utils';
-import { mockProducts } from '@/lib/mockData';
+import { supabase } from '@/utils/supabaseClient';
 import { Plus, Edit2, Trash2, Barcode, PackageSearch, AlertTriangle, Tag, DollarSign, Percent, Layers, Activity } from 'lucide-react';
 import { Modal } from '@/components/Modal';
 import { Toast } from '@/components/Toast';
@@ -26,7 +26,8 @@ export default function ProductsPage() {
     }
   }, [isDark]);
 
-  const [products, setProducts] = useState(mockProducts);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchValue, setSearchValue] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
 
@@ -34,6 +35,7 @@ export default function ProductsPage() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -47,25 +49,79 @@ export default function ProductsPage() {
   const [formErrors, setFormErrors] = useState({});
   const [toast, setToast] = useState(null);
 
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      let query = supabase
+        .from('products')
+        .select('*')
+        .eq('seller_id', session.user.id);
+
+      if (searchValue.trim()) {
+        query = query.ilike('name', `%${searchValue}%`);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (err) {
+      console.error(err);
+      setToast({ type: 'error', message: err.message || 'Failed to fetch products' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, [searchValue]);
+
   const categories = useMemo(() => {
-    return ['all', ...new Set(products.map(p => p.category))];
+    return ['all', ...new Set(products.map(p => p.category).filter(Boolean))];
   }, [products]);
 
   const filtered = useMemo(() => {
-    let result = products.filter(product =>
-      product.name.toLowerCase().includes(searchValue.toLowerCase())
-    );
+    let result = [...products];
 
     if (filterCategory !== 'all') {
       result = result.filter(p => p.category === filterCategory);
     }
 
     return result;
-  }, [products, searchValue, filterCategory]);
+  }, [products, filterCategory]);
 
   const handleViewDetails = (product) => {
     setSelectedProduct(product);
     setIsDetailsOpen(true);
+  };
+
+  const handleEditClick = (product) => {
+    setEditingProduct(product);
+    setFormData({
+      name: product.name,
+      category: product.category || '',
+      price: String(product.price),
+      gst: String(product.gst_rate || product.gst || 18),
+      stock: String(product.stock != null ? product.stock : 0),
+      status: product.status || 'active'
+    });
+    setIsAddOpen(true); // Share modal
+  };
+
+  const handleDeleteProduct = async (id) => {
+    if (!confirm('Are you sure you want to delete this product?')) return;
+    try {
+      const { error } = await supabase.from('products').delete().eq('id', id);
+      if (error) throw error;
+      setToast({ type: 'success', message: 'Product deleted successfully!' });
+      fetchProducts();
+    } catch (err) {
+      console.error(err);
+      setToast({ type: 'error', message: err.message || 'Failed to delete product' });
+    }
   };
 
   const handleInputChange = (e) => {
@@ -98,7 +154,7 @@ export default function ProductsPage() {
     return errors;
   };
 
-  const handleAddSubmit = (e) => {
+  const handleAddSubmit = async (e) => {
     e.preventDefault();
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
@@ -106,40 +162,57 @@ export default function ProductsPage() {
       return;
     }
 
-    const newProduct = {
-      id: `PROD${String(products.length + 1).padStart(3, '0')}`,
-      name: formData.name,
-      category: formData.category,
-      price: Number(formData.price),
-      gst: Number(formData.gst),
-      stock: Number(formData.stock),
-      status: formData.status,
-      image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80' // Placeholder
-    };
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
 
-    setProducts([newProduct, ...products]);
-    setIsAddOpen(false);
+      const productPayload = {
+        name: formData.name,
+        category: formData.category,
+        price: Number(formData.price),
+        gst_rate: Number(formData.gst),
+        stock: Number(formData.stock),
+        status: formData.status,
+        image_url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80',
+        seller_id: session.user.id
+      };
 
-    // Reset Form
-    setFormData({
-      name: '',
-      category: '',
-      price: '',
-      gst: '18',
-      stock: '',
-      status: 'active'
-    });
-    setFormErrors({});
+      if (editingProduct) {
+        const { error } = await supabase
+          .from('products')
+          .update(productPayload)
+          .eq('id', editingProduct.id);
+        if (error) throw error;
+        setToast({ type: 'success', message: 'Product updated successfully!' });
+      } else {
+        const { error } = await supabase
+          .from('products')
+          .insert([productPayload]);
+        if (error) throw error;
+        setToast({ type: 'success', message: 'Product added successfully!' });
+      }
 
-    setToast({
-      message: 'Product added successfully!',
-      type: 'success'
-    });
+      setIsAddOpen(false);
+      setEditingProduct(null);
+      setFormData({
+        name: '',
+        category: '',
+        price: '',
+        gst: '18',
+        stock: '',
+        status: 'active'
+      });
+      setFormErrors({});
+      fetchProducts();
+    } catch (err) {
+      console.error(err);
+      setToast({ type: 'error', message: err.message || 'Failed to save product' });
+    }
   };
 
   const handleExport = () => {
     const headers = ['Name', 'Category', 'Price', 'GST', 'Stock', 'Status'];
-    const rows = filtered.map((product) => [product.name, product.category, String(product.price), String(product.gst), String(product.stock), product.status]);
+    const rows = filtered.map((product) => [product.name, product.category, String(product.price), String(product.gst_rate || product.gst || 18), String(product.stock), product.status]);
     downloadCsv('products.csv', headers, rows);
   };
 
@@ -221,16 +294,22 @@ export default function ProductsPage() {
                   {/* Product Image */}
                   <div className="relative w-full h-40 bg-gray-200 dark:bg-gray-800 overflow-hidden">
                     <img
-                      src={product.image}
+                      src={product.image_url || product.image || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80'}
                       alt={product.name}
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute top-2 right-2 flex gap-2">
-                      <button className="p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                      <button 
+                        onClick={() => handleEditClick(product)}
+                        className="p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                      >
                         <Edit2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                       </button>
-                      <button className="p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                        <Trash2 className="w-4 h-4 text-red-600" />
+                      <button 
+                        onClick={() => handleDeleteProduct(product.id)}
+                        className="p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer text-red-600"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -260,7 +339,7 @@ export default function ProductsPage() {
                           {formatCurrency(product.price)}
                         </span>
                         <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                          GST: {product.gst}%
+                          GST: {product.gst_rate || product.gst || 18}%
                         </span>
                       </div>
 
@@ -309,7 +388,7 @@ export default function ProductsPage() {
             <div className="flex flex-col sm:flex-row items-center gap-4 pb-4 border-b border-gray-100 dark:border-gray-800">
               <div className="w-24 h-24 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-hidden shrink-0">
                 <img
-                  src={selectedProduct.image}
+                  src={selectedProduct.image_url || selectedProduct.image}
                   alt={selectedProduct.name}
                   className="w-full h-full object-cover"
                 />
@@ -335,7 +414,7 @@ export default function ProductsPage() {
                 <Percent className="w-5 h-5 text-gray-400 mt-0.5" />
                 <div>
                   <p className="text-xs text-gray-500 dark:text-gray-400">GST Slab Rate</p>
-                  <p className="text-base font-semibold text-gray-900 dark:text-white">{selectedProduct.gst}%</p>
+                  <p className="text-base font-semibold text-gray-900 dark:text-white">{selectedProduct.gst_rate || selectedProduct.gst || 18}%</p>
                 </div>
               </div>
               <div className="flex items-start gap-2.5">

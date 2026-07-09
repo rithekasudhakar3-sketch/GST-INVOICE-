@@ -10,7 +10,7 @@ import { Pagination } from '@/components/Pagination';
 import { formatCurrency, formatDate, downloadCsv } from '@/lib/utils';
 import { Modal } from '@/components/Modal';
 import { Toast } from '@/components/Toast';
-import { mockCustomers } from '@/lib/mockData';
+import { supabase } from '@/utils/supabaseClient';
 import { Plus, Edit2, Trash2, Phone, Mail, MapPin, Building, FileText, CheckCircle } from 'lucide-react';
 
 export default function CustomersPage() {
@@ -27,7 +27,8 @@ export default function CustomersPage() {
     }
   }, [isDark]);
 
-  const [customers, setCustomers] = useState(mockCustomers);
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchValue, setSearchValue] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState('name');
@@ -38,6 +39,8 @@ export default function CustomersPage() {
   // Modals & Details State
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState(null);
   
   // Form State
   const [formData, setFormData] = useState({
@@ -53,34 +56,78 @@ export default function CustomersPage() {
   const [formErrors, setFormErrors] = useState({});
   const [toast, setToast] = useState(null);
 
+  // Fetch Customers from Supabase
+  const fetchCustomers = async () => {
+    setLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      let queryBuilder = supabase
+        .from('customers')
+        .select('*')
+        .eq('seller_id', session.user.id);
+
+      if (searchValue.trim()) {
+        // Search by new column customer_name or fallback name, or email/billing_email
+        queryBuilder = queryBuilder.or(`customer_name.ilike.%${searchValue}%,billing_email.ilike.%${searchValue}%,name.ilike.%${searchValue}%,email.ilike.%${searchValue}%`);
+      }
+
+      const { data, error } = await queryBuilder;
+      if (error) throw error;
+      
+      // Map new database schema to components' expected legacy fields
+      const mappedData = (data || []).map(cust => ({
+        ...cust,
+        name: cust.customer_name || cust.name || 'Unnamed Customer',
+        email: cust.billing_email || cust.email || '',
+        phone: cust.contact_phone || cust.phone || '',
+        gstin: cust.tax_registration_number || cust.gstin || '',
+        billing_address: cust.street || cust.billing_address || '',
+        totalPurchases: cust.total_purchases !== undefined ? Number(cust.total_purchases) : Number(cust.totalPurchases || 0),
+        invoiceCount: cust.invoice_count !== undefined ? Number(cust.invoice_count) : Number(cust.invoiceCount || 0)
+      }));
+
+      setCustomers(mappedData);
+    } catch (err) {
+      console.error(err);
+      setToast({ type: 'error', message: err.message || 'Failed to fetch customers' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCustomers();
+  }, [searchValue]);
+
   const filteredAndSorted = useMemo(() => {
-    let filtered = customers.filter(customer =>
-      customer.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-      customer.email.toLowerCase().includes(searchValue.toLowerCase()) ||
-      customer.gstin.toLowerCase().includes(searchValue.toLowerCase())
-    );
+    let filtered = [...customers];
 
     if (activeFilter !== 'all') {
-      filtered = filtered.filter((customer) => customer.city.toLowerCase() === activeFilter.toLowerCase());
+      filtered = filtered.filter((customer) => (customer.city || '').toLowerCase() === activeFilter.toLowerCase());
     }
 
     if (sortBy === 'name') {
       filtered.sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortBy === 'purchases') {
-      filtered.sort((a, b) => b.totalPurchases - a.totalPurchases);
+      filtered.sort((a, b) => (b.total_purchases || 0) - (a.total_purchases || 0));
     }
 
     return filtered;
-  }, [customers, searchValue, sortBy, activeFilter]);
+  }, [customers, sortBy, activeFilter]);
 
   const totalPages = Math.ceil(filteredAndSorted.length / itemsPerPage);
-  const filterOptions = ['all', ...new Set(mockCustomers.map((customer) => customer.city))];
+  const filterOptions = useMemo(() => {
+    return ['all', ...new Set(customers.map((customer) => customer.city).filter(Boolean))];
+  }, [customers]);
 
   const handleExport = () => {
     const headers = ['Name', 'Email', 'Phone', 'GSTIN', 'City', 'Total Purchases'];
-    const rows = filteredAndSorted.map((customer) => [customer.name, customer.email, customer.phone, customer.gstin, customer.city, String(customer.totalPurchases)]);
+    const rows = filteredAndSorted.map((customer) => [customer.name, customer.email, customer.phone, customer.gstin, customer.city, String(customer.total_purchases || 0)]);
     downloadCsv('customers.csv', headers, rows);
   };
+  
   const paginatedData = filteredAndSorted.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
@@ -89,6 +136,34 @@ export default function CustomersPage() {
   const handleViewDetails = (customer) => {
     setSelectedCustomer(customer);
     setIsDetailsOpen(true);
+  };
+
+  const handleEditClick = (customer) => {
+    setEditingCustomer(customer);
+    setFormData({
+      name: customer.name,
+      email: customer.email || '',
+      phone: customer.phone || '',
+      company: customer.company || customer.name || '',
+      gstin: customer.gstin || '',
+      city: customer.city || '',
+      state: customer.state || '',
+      address: customer.billing_address || ''
+    });
+    setIsAddOpen(true); // Share same modal for simplicity
+  };
+
+  const handleDeleteCustomer = async (id) => {
+    if (!confirm('Are you sure you want to delete this customer?')) return;
+    try {
+      const { error } = await supabase.from('customers').delete().eq('id', id);
+      if (error) throw error;
+      setToast({ type: 'success', message: 'Customer deleted successfully!' });
+      fetchCustomers();
+    } catch (err) {
+      console.error(err);
+      setToast({ type: 'error', message: err.message || 'Failed to delete customer' });
+    }
   };
 
   const handleInputChange = (e) => {
@@ -120,7 +195,7 @@ export default function CustomersPage() {
     return errors;
   };
 
-  const handleAddSubmit = (e) => {
+  const handleAddSubmit = async (e) => {
     e.preventDefault();
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
@@ -128,44 +203,55 @@ export default function CustomersPage() {
       return;
     }
 
-    // Add new customer
-    const newCustomer = {
-      id: `CUST${String(customers.length + 1).padStart(3, '0')}`,
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      company: formData.company || formData.name,
-      gstin: formData.gstin.toUpperCase(),
-      city: formData.city || 'N/A',
-      state: formData.state || 'N/A',
-      address: formData.address || '',
-      totalPurchases: 0,
-      invoiceCount: 0,
-      status: 'active',
-      joinDate: new Date().toISOString().split('T')[0]
-    };
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
 
-    setCustomers([newCustomer, ...customers]);
-    setIsAddOpen(false);
-    
-    // Reset Form
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      company: '',
-      gstin: '',
-      city: '',
-      state: '',
-      address: ''
-    });
-    setFormErrors({});
+      const customerPayload = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        gstin: formData.gstin.toUpperCase(),
+        billing_address: formData.address,
+        city: formData.city || 'N/A',
+        state: formData.state || 'N/A',
+        pincode: '400001',
+        seller_id: session.user.id
+      };
 
-    // Toast
-    setToast({
-      message: 'Customer added successfully!',
-      type: 'success'
-    });
+      if (editingCustomer) {
+        const { error } = await supabase
+          .from('customers')
+          .update(customerPayload)
+          .eq('id', editingCustomer.id);
+        if (error) throw error;
+        setToast({ type: 'success', message: 'Customer updated successfully!' });
+      } else {
+        const { error } = await supabase
+          .from('customers')
+          .insert([customerPayload]);
+        if (error) throw error;
+        setToast({ type: 'success', message: 'Customer added successfully!' });
+      }
+
+      setIsAddOpen(false);
+      setEditingCustomer(null);
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        company: '',
+        gstin: '',
+        city: '',
+        state: '',
+        address: ''
+      });
+      setFormErrors({});
+      fetchCustomers();
+    } catch (err) {
+      console.error(err);
+      setToast({ type: 'error', message: err.message || 'Failed to save customer' });
+    }
   };
 
   return (
@@ -207,13 +293,13 @@ export default function CustomersPage() {
                   Add Customer
                 </Link>
               </div>
-              <button
-                onClick={() => setIsAddOpen(true)}
+              <Link
+                href="/seller/customers/add"
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors cursor-pointer"
               >
                 <Plus className="w-5 h-5" />
                 Add Customer
-              </button>
+              </Link>
             </div>
 
             {/* Filters */}
@@ -260,10 +346,16 @@ export default function CustomersPage() {
                       {customer.name.split(' ').map(n => n[0]).join('')}
                     </div>
                     <div className="flex gap-2">
-                      <button className={`p-2 rounded-lg ${isDark ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'}`}>
+                      <button 
+                        onClick={() => handleEditClick(customer)}
+                        className={`p-2 rounded-lg ${isDark ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'} cursor-pointer`}
+                      >
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button className={`p-2 rounded-lg ${isDark ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'} text-red-600`}>
+                      <button 
+                        onClick={() => handleDeleteCustomer(customer.id)}
+                        className={`p-2 rounded-lg ${isDark ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'} text-red-600 cursor-pointer`}
+                      >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -293,13 +385,13 @@ export default function CustomersPage() {
                       <div>
                         <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Total Purchases</p>
                         <p className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                          {formatCurrency(customer.totalPurchases)}
+                          {formatCurrency(customer.total_purchases || 0)}
                         </p>
                       </div>
                       <div>
                         <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Invoices</p>
                         <p className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                          {customer.invoiceCount}
+                          {customer.invoice_count || 0}
                         </p>
                       </div>
                     </div>
@@ -362,7 +454,7 @@ export default function CustomersPage() {
                 <Building className="w-5 h-5 text-gray-400 mt-0.5" />
                 <div>
                   <p className="text-xs text-gray-500 dark:text-gray-400">Company Name</p>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedCustomer.company}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{selectedCustomer.company || selectedCustomer.name}</p>
                 </div>
               </div>
               <div className="flex items-start gap-2.5">
@@ -393,7 +485,7 @@ export default function CustomersPage() {
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Billing Address</p>
                 <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {selectedCustomer.address ? `${selectedCustomer.address}, ` : ''}{selectedCustomer.city}, {selectedCustomer.state}
+                  {selectedCustomer.billing_address ? `${selectedCustomer.billing_address}, ` : ''}{selectedCustomer.city}, {selectedCustomer.state}
                 </p>
               </div>
             </div>
@@ -401,11 +493,11 @@ export default function CustomersPage() {
             <div className="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-xl grid grid-cols-2 gap-4">
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Total Purchase Value</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-white mt-1">{formatCurrency(selectedCustomer.totalPurchases)}</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-white mt-1">{formatCurrency(selectedCustomer.total_purchases || 0)}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Total Invoices Issued</p>
-                <p className="text-lg font-bold text-gray-900 dark:text-white mt-1">{selectedCustomer.invoiceCount}</p>
+                <p className="text-lg font-bold text-gray-900 dark:text-white mt-1">{selectedCustomer.invoice_count || 0}</p>
               </div>
             </div>
 

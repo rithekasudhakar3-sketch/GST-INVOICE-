@@ -9,5 +9,8 @@
     "build:client": "pnpm --filter client build",
     "build:server": "pnpm --filter server build",
     "install:all": "pnpm install"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.109.0"
   }
 }

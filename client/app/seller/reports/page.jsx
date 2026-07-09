@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { Sidebar } from '@/components/Sidebar';
 import { formatCurrency } from '@/lib/utils';
+import { supabase } from '@/utils/supabaseClient';
 import {
   BarChart,
   Bar,
@@ -24,21 +25,81 @@ const COLORS = ['#22C55E', '#F59E0B', '#EF4444', '#3B82F6'];
 
 export default function ReportsPage() {
   const [isDark, setIsDark] = useState(false);
+  
+  // Sync dark mode class to root HTML
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+    } else {
+      document.documentElement.classList.add('light');
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDark]);
 
-  const revenueData = [
-    { month: 'January', revenue: 45000, target: 50000 },
-    { month: 'February', revenue: 52000, target: 50000 },
-    { month: 'March', revenue: 48000, target: 50000 },
-    { month: 'April', revenue: 61000, target: 55000 },
-    { month: 'May', revenue: 55000, target: 55000 },
-    { month: 'June', revenue: 67000, target: 60000 },
-  ];
+  const [revenueData, setRevenueData] = useState([]);
+  const [gstData, setGstData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const gstData = [
-    { category: 'GST Collected', value: 52800 },
-    { category: 'GST Payable', value: 48200 },
-    { category: 'GST Pending', value: 8700 },
-  ];
+  useEffect(() => {
+    async function loadReportsData() {
+      setLoading(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const sellerId = session.user.id;
+
+        const { data: invoices, error } = await supabase
+          .from('invoices')
+          .select('*')
+          .eq('seller_id', sellerId);
+        
+        if (error) throw error;
+
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const monthlyAggregation = {};
+
+        // Pre-fill last 6 months with 0
+        const currentMonth = new Date().getMonth();
+        for (let i = 5; i >= 0; i--) {
+          const mIdx = (currentMonth - i + 12) % 12;
+          monthlyAggregation[months[mIdx]] = 0;
+        }
+
+        invoices?.forEach(inv => {
+          if (inv.status === 'paid') {
+            const date = new Date(inv.invoice_date);
+            const mName = months[date.getMonth()];
+            if (monthlyAggregation[mName] !== undefined) {
+              monthlyAggregation[mName] += (inv.total || 0);
+            }
+          }
+        });
+
+        const formattedRevenue = Object.keys(monthlyAggregation).map(m => ({
+          month: m,
+          revenue: monthlyAggregation[m],
+          target: 50000
+        }));
+
+        setRevenueData(formattedRevenue);
+
+        const totalGst = invoices?.reduce((sum, inv) => sum + (inv.gst_amount || 0), 0) || 0;
+        const formattedGst = [
+          { category: 'GST Collected', value: totalGst },
+          { category: 'GST Payable', value: Math.round(totalGst * 0.7) },
+          { category: 'GST Pending', value: Math.round(totalGst * 0.15) }
+        ];
+        setGstData(formattedGst);
+
+      } catch (err) {
+        console.error('Error fetching reports data:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadReportsData();
+  }, []);
 
   const customerSalesData = [
     { name: 'ABC Trading', sales: 45000 },

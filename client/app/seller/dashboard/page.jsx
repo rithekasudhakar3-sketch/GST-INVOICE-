@@ -1,13 +1,13 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { StatCard } from '@/components/StatCard';
 import { Navbar } from '@/components/Navbar';
 import { Sidebar } from '@/components/Sidebar';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { mockInvoices, getDashboardStats, mockProducts } from '@/lib/mockData';
+import { supabase } from '@/utils/supabaseClient';
 import {
   BarChart,
   Bar,
@@ -35,26 +35,120 @@ const colors = ['#22C55E', '#F59E0B', '#EF4444'];
 
 export default function SellerDashboard() {
   const [isDark, setIsDark] = useState(false);
-  const stats = getDashboardStats('seller');
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    revenue: 0,
+    revenueChange: '+12%',
+    customers: 0,
+    customersChange: '+4%',
+    invoices: 0,
+    invoicesChange: '+8%',
+    paidInvoices: 0,
+    pendingPayments: 0,
+    pendingPaymentsAmount: 0,
+    recentInvoices: [],
+    inventoryAlerts: []
+  });
 
-  const inventoryAlerts = useMemo(() => mockProducts.filter((product) => product.stock < 10), []);
-  const gstSummary = useMemo(() => ({
-    collected: 52800,
-    payable: 19420,
-    pending: 8200,
-  }), []);
+  const [gstSummary, setGstSummary] = useState({
+    collected: 0,
+    payable: 0,
+    pending: 0
+  });
+
+  const loadDashboardData = async () => {
+    setLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const sellerId = session.user.id;
+
+      // 1. Fetch all invoices for seller
+      const { data: invoices, error: invError } = await supabase
+        .from('invoices')
+        .select('*, customers(name)')
+        .eq('seller_id', sellerId);
+      
+      if (invError) throw invError;
+
+      // 2. Fetch customers count for seller
+      const { count: customersCount, error: custError } = await supabase
+        .from('customers')
+        .select('*', { count: 'exact', head: true })
+        .eq('seller_id', sellerId);
+      
+      if (custError) throw custError;
+
+      // 3. Fetch products catalog with low stock
+      const { data: lowStockProducts, error: prodError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('seller_id', sellerId)
+        .lt('stock', 10);
+      
+      if (prodError) throw prodError;
+
+      // Calculations
+      const totalInvoices = invoices?.length || 0;
+      const paidInvoicesList = invoices?.filter(inv => inv.status === 'paid') || [];
+      const pendingInvoicesList = invoices?.filter(inv => inv.status === 'pending' || inv.status === 'partial') || [];
+      
+      const totalRevenue = paidInvoicesList.reduce((sum, inv) => sum + (inv.total || 0), 0);
+      const outstandingAmount = pendingInvoicesList.reduce((sum, inv) => sum + (inv.total || 0), 0);
+      const totalGstCollected = invoices?.reduce((sum, inv) => sum + (inv.gst_amount || 0), 0) || 0;
+
+      // Sort and get recent 5 invoices
+      const sortedInvoices = [...(invoices || [])].sort((a, b) => new Date(b.invoice_date).getTime() - new Date(a.invoice_date).getTime());
+      const mappedRecentInvoices = sortedInvoices.slice(0, 5).map(inv => ({
+        ...inv,
+        invoiceNumber: inv.invoice_number,
+        invoiceDate: inv.invoice_date,
+        customerName: inv.customers?.name || 'Unknown Customer',
+        total: inv.total,
+        status: inv.status
+      }));
+
+      setStats({
+        revenue: totalRevenue,
+        revenueChange: '+12%',
+        customers: customersCount || 0,
+        customersChange: '+4%',
+        invoices: totalInvoices,
+        invoicesChange: '+8%',
+        paidInvoices: paidInvoicesList.length,
+        pendingPayments: pendingInvoicesList.length,
+        pendingPaymentsAmount: outstandingAmount,
+        recentInvoices: mappedRecentInvoices,
+        inventoryAlerts: lowStockProducts || []
+      });
+
+      setGstSummary({
+        collected: totalGstCollected,
+        payable: Math.round(totalGstCollected * 0.7), // Dummy payload splits
+        pending: Math.round(totalGstCollected * 0.15)
+      });
+
+    } catch (err) {
+      console.error('Error fetching dashboard stats:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const inventoryAlerts = stats.inventoryAlerts;
 
   const invoiceStatusData = [
-    { name: 'Paid', value: stats.paidInvoices, percentage: 79 },
-    { name: 'Pending', value: stats.pendingPayments, percentage: 21 },
+    { name: 'Paid', value: stats.paidInvoices, percentage: stats.invoices ? Math.round((stats.paidInvoices / stats.invoices) * 100) : 100 },
+    { name: 'Pending', value: stats.pendingPayments, percentage: stats.invoices ? Math.round((stats.pendingPayments / stats.invoices) * 100) : 0 },
   ];
 
   const monthlyData = [
-    { month: 'Jul', revenue: 45000 },
-    { month: 'Aug', revenue: 52000 },
-    { month: 'Sep', revenue: 48000 },
-    { month: 'Oct', revenue: 61000 },
-    { month: 'Nov', revenue: 67000 },
+    { month: 'Revenue', revenue: stats.revenue },
+    { month: 'Pending', revenue: stats.pendingPaymentsAmount }
   ];
 
   return (
@@ -257,7 +351,7 @@ export default function SellerDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {mockInvoices.slice(0, 5).map((invoice) => (
+                    {stats.recentInvoices.map((invoice) => (
                       <tr key={invoice.id} className={`${isDark ? 'border-gray-800 hover:bg-gray-800' : 'border-gray-200 hover:bg-gray-50'} border-b transition-colors`}>
                         <td className={`py-3 px-4 font-medium ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
                           {invoice.invoiceNumber}

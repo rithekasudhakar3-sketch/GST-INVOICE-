@@ -7,9 +7,9 @@ export function Avatar({ src, name, size = 'md' }) {
     lg: 'w-12 h-12 text-base',
   };
 
-  const initials = name
+  const initials = (name && typeof name === 'string' ? name : 'User')
     .split(' ')
-    .map(n => n[0])
+    .map(n => n ? n[0] : '')
     .join('')
     .toUpperCase();
 

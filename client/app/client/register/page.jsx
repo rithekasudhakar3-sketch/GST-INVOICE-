@@ -37,8 +37,12 @@ export default function ClientRegisterPage() {
     if (!validateForm()) return;
     setLoading(true);
     setToast(null);
-    setTimeout(() => {
-      const result = registerClient(name, email, password);
+    
+    try {
+      const [result] = await Promise.all([
+        registerClient(name, email, password),
+        new Promise((resolve) => setTimeout(resolve, 800))
+      ]);
       setLoading(false);
       
       if (result.success) {
@@ -47,9 +51,13 @@ export default function ClientRegisterPage() {
           router.replace('/client/login');
         }, 1400);
       } else {
-        setToast({ type: 'error', message: result.error });
+        const errorMsg = result.error?.message || (typeof result.error === 'string' ? result.error : 'Registration failed');
+        setToast({ type: 'error', message: errorMsg });
       }
-    }, 800);
+    } catch (err) {
+      setLoading(false);
+      setToast({ type: 'error', message: err.message || 'An error occurred' });
+    }
   };
 
   return (
@@ -78,9 +86,25 @@ export default function ClientRegisterPage() {
                   <p className="text-sm font-semibold uppercase tracking-[0.25em] text-fuchsia-600">Client Sign Up</p>
                   <h2 className="mt-2 text-3xl font-semibold">Create account</h2>
                 </div>
-                <button onClick={() => setIsDark(!isDark)} className={`rounded-full px-3 py-2 text-sm ${isDark ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-700'}`}>
+                <button onClick={() => setIsDark(!isDark)} className={`rounded-full px-3 py-2 text-sm ${isDark ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-700'} cursor-pointer`}>
                   {isDark ? '☀️' : '🌙'}
                 </button>
+              </div>
+
+              {/* Portal Switcher Tab Control */}
+              <div className="mb-6">
+                <div className="inline-flex rounded-xl p-1 bg-slate-100 dark:bg-slate-800/60 border border-slate-200/50 dark:border-slate-700/50">
+                  <Link
+                    href="/seller/register"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+                  >
+                    I am a Seller
+                  </Link>
+                  <span className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold bg-white dark:bg-slate-700 text-fuchsia-600 dark:text-white shadow-sm">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    I am a Client
+                  </span>
+                </div>
               </div>
 
               <form className="space-y-4" onSubmit={handleSubmit}>
